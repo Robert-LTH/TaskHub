@@ -24,6 +24,7 @@ public class CommandExecutor
         }
 
         var service = _manager.GetService(handler.ServiceName);
-        await handler.ExecuteAsync(payload, service, token);
+        var cmd = handler.Create(payload);
+        await cmd.ExecuteAsync(service, token);
     }
 }
