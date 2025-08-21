@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using TaskHub.Abstractions;
@@ -15,11 +16,12 @@ public class EchoCommand : ICommand
 
     public EchoRequest Request { get; }
 
-    public async Task ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
+    public async Task<JsonElement> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var client = (HttpClient)service.GetService();
         var result = await client.GetStringAsync(Request.Resource, cancellationToken);
         Console.WriteLine($"Echo: {result}");
+        return JsonSerializer.SerializeToElement(result);
     }
 }
 
