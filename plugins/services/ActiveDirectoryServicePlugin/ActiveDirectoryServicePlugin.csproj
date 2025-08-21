@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\\..\\..\\src\\TaskHub.Abstractions\\TaskHub.Abstractions.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.DirectoryServices" Version="8.0.0" />
+  </ItemGroup>
+  <Target Name="CopyToRoot" AfterTargets="Build">
+    <ItemGroup>
+      <Assemblies Include="$(OutputPath)*.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(Assemblies)" DestinationFolder="$(MSBuildProjectDirectory)" />
+  </Target>
+</Project>
