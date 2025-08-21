@@ -3,6 +3,7 @@ using Hangfire.MemoryStorage;
 using Hangfire.Dashboard;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json;
+using System.Linq;
 using TaskHub.Server;
 using TaskHub.Abstractions;
 using Microsoft.Extensions.Configuration;
@@ -44,10 +45,10 @@ RecurringJob.AddOrUpdate<CommandExecutor>(
 
 app.MapGet("/dlls", () => plugins.LoadedAssemblies);
 
-app.MapPost("/commands/{command}", (string command, JsonElement payload, IBackgroundJobClient client) =>
+app.MapPost("/commands", (CommandChainRequest request, IBackgroundJobClient client) =>
 {
-    var jobId = client.Enqueue<CommandExecutor>(exec => exec.Execute(command, payload, CancellationToken.None));
-    return Results.Ok(new EnqueuedCommandResult(jobId, command, DateTimeOffset.UtcNow));
+    var jobId = client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, CancellationToken.None));
+    return Results.Ok(new EnqueuedCommandResult(jobId, request.Commands, DateTimeOffset.UtcNow));
 }).Produces<EnqueuedCommandResult>();
 
 app.MapPost("/commands/{id}/cancel", (string id, IBackgroundJobClient client) =>
@@ -55,11 +56,17 @@ app.MapPost("/commands/{id}/cancel", (string id, IBackgroundJobClient client) =>
     return client.Delete(id) ? Results.Ok() : Results.NotFound();
 });
 
-app.MapPost("/commands/chain", async (CommandChainRequest request, CommandExecutor executor) =>
+app.MapGet("/commands/{id}", (string id) =>
 {
-    var result = await executor.ExecuteChain(request.Commands, request.Payload, CancellationToken.None);
-    return Results.Json(result);
-}).Produces<JsonElement>();
+    var jobDetails = JobStorage.Current.GetMonitoringApi().JobDetails(id);
+    if (jobDetails == null)
+    {
+        return Results.NotFound();
+    }
+
+    var state = jobDetails.History.FirstOrDefault()?.StateName ?? "Unknown";
+    return Results.Ok(new CommandStatusResult(id, state));
+}).Produces<CommandStatusResult>();
 
 app.Run();
 

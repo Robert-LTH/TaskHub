@@ -20,7 +20,9 @@ dotnet run --project src/TaskHub.Server
 
 The server exposes a minimal API:
 
-- `POST /commands/{handler}?arg=value` – enqueue a command handled by a plugin and return the job id with metadata.
+- `POST /commands` – enqueue one or more commands handled by plugins. The body accepts a JSON payload with a
+  `commands` array and an optional `payload` object. Returns the job id with metadata.
+- `GET /commands/{id}` – retrieve the status of a previously enqueued job.
 - `POST /commands/{id}/cancel` – cancel a queued job.
 - `GET /dlls` – list loaded plugin assemblies.
 
