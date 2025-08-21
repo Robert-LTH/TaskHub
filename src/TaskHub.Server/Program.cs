@@ -36,6 +36,12 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 var plugins = app.Services.GetRequiredService<PluginManager>();
 plugins.Load(Path.Combine(AppContext.BaseDirectory, "plugins"));
 
+var payload = JsonSerializer.Deserialize<JsonElement>("{}");
+RecurringJob.AddOrUpdate<CommandExecutor>(
+    "clean-temp",
+    exec => exec.Execute("clean-temp", payload, CancellationToken.None),
+    Cron.HourInterval(7));
+
 app.MapGet("/dlls", () => plugins.LoadedAssemblies);
 
 app.MapPost("/commands/{command}", (string command, JsonElement payload, IBackgroundJobClient client) =>

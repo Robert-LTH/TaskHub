@@ -14,6 +14,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MsGraphServicePlugin", "plu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ActiveDirectoryServicePlugin", "plugins/services/ActiveDirectoryServicePlugin/ActiveDirectoryServicePlugin.csproj", "{F158A15A-29A1-4385-9BEC-BDB5DE89B748}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CleanTempHandler", "plugins/handlers/CleanTempHandler/CleanTempHandler.csproj", "{C71448A2-77B8-47BC-B1C2-AEBA72E4464C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileSystemServicePlugin", "plugins/services/FileSystemServicePlugin/FileSystemServicePlugin.csproj", "{3C4176EF-E2B9-4311-92D5-B1BA60C226B3}"
+EndProject
 Global
     GlobalSection(SolutionConfigurationPlatforms) = preSolution
         Debug|Any CPU = Debug|Any CPU
@@ -44,6 +48,14 @@ Global
         {F158A15A-29A1-4385-9BEC-BDB5DE89B748}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {F158A15A-29A1-4385-9BEC-BDB5DE89B748}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {F158A15A-29A1-4385-9BEC-BDB5DE89B748}.Release|Any CPU.Build.0 = Release|Any CPU
+        {C71448A2-77B8-47BC-B1C2-AEBA72E4464C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {C71448A2-77B8-47BC-B1C2-AEBA72E4464C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {C71448A2-77B8-47BC-B1C2-AEBA72E4464C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {C71448A2-77B8-47BC-B1C2-AEBA72E4464C}.Release|Any CPU.Build.0 = Release|Any CPU
+        {3C4176EF-E2B9-4311-92D5-B1BA60C226B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {3C4176EF-E2B9-4311-92D5-B1BA60C226B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {3C4176EF-E2B9-4311-92D5-B1BA60C226B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {3C4176EF-E2B9-4311-92D5-B1BA60C226B3}.Release|Any CPU.Build.0 = Release|Any CPU
     EndGlobalSection
     GlobalSection(SolutionProperties) = preSolution
         HideSolutionNode = FALSE
