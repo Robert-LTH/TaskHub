@@ -22,6 +22,7 @@ public class CommandExecutor
             throw new InvalidOperationException($"Handler {handlerName} not found.");
         }
 
-        await handler.ExecuteAsync(arguments, _manager.Service, token);
+        var service = _manager.GetService(handler.ServiceName);
+        await handler.ExecuteAsync(arguments, service, token);
     }
 }

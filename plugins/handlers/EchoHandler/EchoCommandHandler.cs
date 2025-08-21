@@ -8,6 +8,7 @@ namespace EchoHandler;
 public class EchoCommandHandler : ICommandHandler
 {
     public string Name => "echo";
+    public string ServiceName => "http";
 
     public async Task ExecuteAsync(string arguments, IServicePlugin service, CancellationToken cancellationToken)
     {
