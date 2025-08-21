@@ -1,4 +1,4 @@
-using System.Net.Http;
+using System.DirectoryServices;
 using System.Threading;
 using System.Threading.Tasks;
 using TaskHub.Abstractions;
@@ -11,8 +11,17 @@ public class ActiveDirectoryServicePlugin : IServicePlugin
 
     public async Task<string> GetAsync(string resource, CancellationToken cancellationToken)
     {
-        using var client = new HttpClient();
-        var endpoint = $"https://graph.windows.net/{resource}?api-version=1.6";
-        return await client.GetStringAsync(endpoint, cancellationToken);
+        return await Task.Run(() =>
+        {
+            using var entry = new DirectoryEntry($"LDAP://{resource}");
+            using var searcher = new DirectorySearcher(entry)
+            {
+                SearchScope = SearchScope.Subtree,
+                SizeLimit = 1
+            };
+
+            var result = searcher.FindOne();
+            return result?.Path ?? string.Empty;
+        }, cancellationToken);
     }
 }

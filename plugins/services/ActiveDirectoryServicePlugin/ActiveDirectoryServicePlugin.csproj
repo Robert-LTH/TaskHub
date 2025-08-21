@@ -6,6 +6,9 @@
   <ItemGroup>
     <ProjectReference Include="..\\..\\..\\src\\TaskHub.Abstractions\\TaskHub.Abstractions.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.DirectoryServices" Version="8.0.0" />
+  </ItemGroup>
   <Target Name="CopyToRoot" AfterTargets="Build">
     <ItemGroup>
       <Assemblies Include="$(OutputPath)*.dll" />
