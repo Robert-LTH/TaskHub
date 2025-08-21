@@ -2,13 +2,16 @@ using Hangfire;
 using Hangfire.MemoryStorage;
 using Hangfire.Dashboard;
 using TaskHub.Server;
-using System.Net.Http;
+using Microsoft.Extensions.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHangfire(config => config.UseMemoryStorage());
 builder.Services.AddHangfireServer();
 builder.Services.AddHttpClient("msgraph").ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseDefaultCredentials = true });
+
+builder.Services.AddLogging();
+builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
 builder.Services.AddSingleton<PluginManager>();
 builder.Services.AddSingleton<CommandExecutor>();

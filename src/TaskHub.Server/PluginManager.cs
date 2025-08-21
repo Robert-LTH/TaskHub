@@ -10,9 +10,9 @@ namespace TaskHub.Server;
 public class PluginManager
 {
     private readonly Dictionary<string, (ICommandHandler Handler, PluginLoadContext Context, string AssemblyPath)> _handlers = new();
+    private readonly Dictionary<string, (IServicePlugin Plugin, PluginLoadContext Context, string AssemblyPath)> _services = new();
     private readonly List<string> _assemblies = new();
     private readonly IServiceProvider _provider;
-    private (IServicePlugin Plugin, PluginLoadContext Context, string AssemblyPath)? _service;
 
     public PluginManager(IServiceProvider provider)
     {
@@ -34,9 +34,8 @@ public class PluginManager
                 if (type != null)
                 {
                     var plugin = (IServicePlugin)ActivatorUtilities.CreateInstance(_provider, type)!;
-                    _service = (plugin, context, dll);
+                    _services[plugin.Name] = (plugin, context, dll);
                     _assemblies.Add(dll);
-                    break;
                 }
             }
         }
@@ -63,5 +62,7 @@ public class PluginManager
 
     public ICommandHandler? GetHandler(string name) => _handlers.TryGetValue(name, out var value) ? value.Handler : null;
 
-    public IServicePlugin Service => _service?.Plugin ?? throw new InvalidOperationException("Service plugin not loaded");
+    public IServicePlugin GetService(string name) => _services.TryGetValue(name, out var value)
+        ? value.Plugin
+        : throw new InvalidOperationException($"Service plugin {name} not loaded");
 }
