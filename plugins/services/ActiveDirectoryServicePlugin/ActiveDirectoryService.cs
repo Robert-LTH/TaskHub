@@ -36,4 +36,3 @@ public class ActiveDirectoryServicePlugin : IServicePlugin
         return new DirectorySearcher(entry);
     });
 }
-
