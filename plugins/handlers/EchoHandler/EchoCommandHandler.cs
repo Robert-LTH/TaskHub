@@ -1,24 +1,19 @@
-using System;
 using System.Collections.Generic;
-using System.Net.Http;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using TaskHub.Abstractions;
 
 namespace EchoHandler;
 
-public class EchoCommandHandler : ICommandHandler
+public class EchoCommandHandler : ICommandHandler<EchoCommand>
 {
     public IReadOnlyCollection<string> Commands => new[] { "echo" };
     public string ServiceName => "http";
 
-    public async Task ExecuteAsync(JsonElement payload, IServicePlugin service, CancellationToken cancellationToken)
+    public EchoCommand Create(JsonElement payload)
     {
-        var resource = payload.GetProperty("resource").GetString() ?? string.Empty;
-        var client = (HttpClient)service.GetService();
-        var result = await client.GetStringAsync(resource, cancellationToken);
-        Console.WriteLine($"Echo: {result}");
+        var request = JsonSerializer.Deserialize<EchoRequest>(payload.GetRawText())
+                      ?? new EchoRequest();
+        return new EchoCommand(request);
     }
 }
 
