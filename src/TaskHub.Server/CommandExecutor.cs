@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using TaskHub.Abstractions;
@@ -14,15 +15,15 @@ public class CommandExecutor
         _manager = manager;
     }
 
-    public async Task Execute(string handlerName, string arguments, CancellationToken token)
+    public async Task Execute(string command, JsonElement payload, CancellationToken token)
     {
-        var handler = _manager.GetHandler(handlerName);
+        var handler = _manager.GetHandler(command);
         if (handler == null)
         {
-            throw new InvalidOperationException($"Handler {handlerName} not found.");
+            throw new InvalidOperationException($"Handler {command} not found.");
         }
 
         var service = _manager.GetService(handler.ServiceName);
-        await handler.ExecuteAsync(arguments, service, token);
+        await handler.ExecuteAsync(payload, service, token);
     }
 }

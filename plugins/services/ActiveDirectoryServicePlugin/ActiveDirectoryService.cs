@@ -1,6 +1,5 @@
+using System;
 using System.DirectoryServices;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using TaskHub.Abstractions;
@@ -26,25 +25,14 @@ public class ActiveDirectoryServicePlugin : IServicePlugin
         }
     }
 
-=======
     public string Name => "activedirectory";
 
-    public async Task<string> GetAsync(string resource, CancellationToken cancellationToken)
+    public object GetService() => (Func<string, DirectorySearcher>)(path =>
     {
-        _logger.LogInformation("Querying LDAP path {Resource}", resource);
-        return await Task.Run(() =>
-        {
-            using var entry = _useProcessContext
-                ? new DirectoryEntry($"LDAP://{resource}")
-                : new DirectoryEntry($"LDAP://{resource}", _username, _password);
-            using var searcher = new DirectorySearcher(entry)
-            {
-                SearchScope = SearchScope.Subtree,
-                SizeLimit = 1
-            };
-
-            var result = searcher.FindOne();
-            return result?.Path ?? string.Empty;
-        }, cancellationToken);
-    }
+        _logger.LogInformation("Creating searcher for {Path}", path);
+        var entry = _useProcessContext
+            ? new DirectoryEntry($"LDAP://{path}")
+            : new DirectoryEntry($"LDAP://{path}", _username, _password);
+        return new DirectorySearcher(entry);
+    });
 }

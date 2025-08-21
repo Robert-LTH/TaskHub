@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -5,7 +7,7 @@ namespace TaskHub.Abstractions;
 
 public interface ICommandHandler
 {
-    string Name { get; }
+    IReadOnlyCollection<string> Commands { get; }
     string ServiceName { get; }
-    Task ExecuteAsync(string arguments, IServicePlugin service, CancellationToken cancellationToken);
+    Task ExecuteAsync(JsonElement payload, IServicePlugin service, CancellationToken cancellationToken);
 }

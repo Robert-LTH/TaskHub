@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TaskHub.Abstractions;
 
@@ -21,11 +22,14 @@ public class PluginManager
 
     public void Load(string root)
     {
+        var config = _provider.GetRequiredService<IConfiguration>();
         var serviceRoot = Path.Combine(root, "services");
         if (Directory.Exists(serviceRoot))
         {
             foreach (var dir in Directory.GetDirectories(serviceRoot))
             {
+                var name = Path.GetFileName(dir).Replace("ServicePlugin", string.Empty);
+                if (!config.GetSection($"PluginSettings:{name}").Exists()) continue;
                 var dll = Directory.GetFiles(dir, "*.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
                 if (dll == null) continue;
                 var context = new PluginLoadContext(dll);
@@ -45,6 +49,8 @@ public class PluginManager
         {
             foreach (var dir in Directory.GetDirectories(handlerRoot))
             {
+                var name = Path.GetFileName(dir).Replace("Handler", string.Empty);
+                if (!config.GetSection($"PluginSettings:{name}").Exists()) continue;
                 var dll = Directory.GetFiles(dir, "*.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
                 if (dll == null) continue;
                 var context = new PluginLoadContext(dll);
@@ -52,7 +58,10 @@ public class PluginManager
                 var type = asm.GetTypes().FirstOrDefault(t => typeof(ICommandHandler).IsAssignableFrom(t) && !t.IsAbstract);
                 if (type == null) continue;
                 var handler = (ICommandHandler)ActivatorUtilities.CreateInstance(_provider, type)!;
-                _handlers[handler.Name] = (handler, context, dll);
+                foreach (var command in handler.Commands)
+                {
+                    _handlers[command] = (handler, context, dll);
+                }
                 _assemblies.Add(dll);
             }
         }
@@ -66,3 +75,4 @@ public class PluginManager
         ? value.Plugin
         : throw new InvalidOperationException($"Service plugin {name} not loaded");
 }
+

@@ -1,6 +1,8 @@
 using Hangfire;
 using Hangfire.MemoryStorage;
 using Hangfire.Dashboard;
+using Microsoft.Extensions.Configuration;
+using System.Text.Json;
 using TaskHub.Server;
 using Microsoft.Extensions.Configuration;
 
@@ -9,6 +11,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHangfire(config => config.UseMemoryStorage());
 builder.Services.AddHangfireServer();
 builder.Services.AddHttpClient("msgraph").ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseDefaultCredentials = true });
+
+builder.Services.AddLogging();
+builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
 builder.Services.AddLogging();
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
@@ -28,9 +33,9 @@ plugins.Load(Path.Combine(AppContext.BaseDirectory, "plugins"));
 
 app.MapGet("/dlls", () => plugins.LoadedAssemblies);
 
-app.MapPost("/commands/{handler}", (string handler, string? arg, IBackgroundJobClient client) =>
+app.MapPost("/commands/{command}", (string command, JsonElement payload, IBackgroundJobClient client) =>
 {
-    var jobId = client.Enqueue<CommandExecutor>(exec => exec.Execute(handler, arg ?? string.Empty, CancellationToken.None));
+    var jobId = client.Enqueue<CommandExecutor>(exec => exec.Execute(command, payload, CancellationToken.None));
     return Results.Ok(jobId);
 });
 
@@ -40,3 +45,4 @@ app.MapPost("/commands/{id}/cancel", (string id, IBackgroundJobClient client) =>
 });
 
 app.Run();
+
