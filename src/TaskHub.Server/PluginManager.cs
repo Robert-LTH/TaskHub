@@ -75,3 +75,4 @@ public class PluginManager
         ? value.Plugin
         : throw new InvalidOperationException($"Service plugin {name} not loaded");
 }
+

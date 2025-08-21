@@ -40,3 +40,4 @@ app.MapPost("/commands/{id}/cancel", (string id, IBackgroundJobClient client) =>
 });
 
 app.Run();
+
