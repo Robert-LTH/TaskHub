@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using TaskHub.Abstractions;
@@ -14,14 +15,14 @@ public class DeleteFolderCommand : ICommand
         _path = path;
     }
 
-    public Task ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
+    public Task<JsonElement> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         if (Directory.Exists(_path))
         {
             Directory.Delete(_path, true);
         }
 
-        return Task.CompletedTask;
+        return Task.FromResult(JsonSerializer.SerializeToElement(_path));
     }
 }
 

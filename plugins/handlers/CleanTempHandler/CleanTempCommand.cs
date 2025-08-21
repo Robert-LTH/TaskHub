@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using TaskHub.Abstractions;
@@ -14,10 +15,10 @@ public class CleanTempCommand : ICommand
         _path = path;
     }
 
-    public Task ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
+    public Task<JsonElement> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var cleaner = (Action<string>)service.GetService();
         cleaner(_path);
-        return Task.CompletedTask;
+        return Task.FromResult(JsonSerializer.SerializeToElement(_path));
     }
 }

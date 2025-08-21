@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,7 +16,7 @@ public class CommandExecutor
         _manager = manager;
     }
 
-    public async Task Execute(string command, JsonElement payload, CancellationToken token)
+    private async Task<JsonElement> ExecuteInternal(string command, JsonElement payload, CancellationToken token)
     {
         var handler = _manager.GetHandler(command);
         if (handler == null)
@@ -25,6 +26,22 @@ public class CommandExecutor
 
         var service = _manager.GetService(handler.ServiceName);
         var cmd = handler.Create(payload);
-        await cmd.ExecuteAsync(service, token);
+        return await cmd.ExecuteAsync(service, token);
+    }
+
+    public async Task Execute(string command, JsonElement payload, CancellationToken token)
+    {
+        _ = await ExecuteInternal(command, payload, token);
+    }
+
+    public async Task<JsonElement> ExecuteChain(IEnumerable<string> commands, JsonElement payload, CancellationToken token)
+    {
+        var current = payload;
+        foreach (var command in commands)
+        {
+            current = await ExecuteInternal(command, current, token);
+        }
+
+        return current;
     }
 }

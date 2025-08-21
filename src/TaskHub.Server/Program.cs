@@ -55,5 +55,11 @@ app.MapPost("/commands/{id}/cancel", (string id, IBackgroundJobClient client) =>
     return client.Delete(id) ? Results.Ok() : Results.NotFound();
 });
 
+app.MapPost("/commands/chain", async (CommandChainRequest request, CommandExecutor executor) =>
+{
+    var result = await executor.ExecuteChain(request.Commands, request.Payload, CancellationToken.None);
+    return Results.Json(result);
+}).Produces<JsonElement>();
+
 app.Run();
 
