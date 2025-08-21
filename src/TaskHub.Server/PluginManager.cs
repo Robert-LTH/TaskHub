@@ -10,8 +10,11 @@ namespace TaskHub.Server;
 
 public class PluginManager
 {
-    private readonly Dictionary<string, (ICommandHandler Handler, PluginLoadContext Context, string AssemblyPath)> _handlers = new();
-    private readonly Dictionary<string, (IServicePlugin Plugin, PluginLoadContext Context, string AssemblyPath)> _services = new();
+    // Store concrete implementation types rather than interface instances so the
+    // dependency injection container can create fresh objects with their
+    // dependencies satisfied on each request.
+    private readonly Dictionary<string, (Type HandlerType, PluginLoadContext Context, string AssemblyPath)> _handlers = new();
+    private readonly Dictionary<string, (Type ServiceType, PluginLoadContext Context, string AssemblyPath)> _services = new();
     private readonly List<string> _assemblies = new();
     private readonly IServiceProvider _provider;
 
@@ -38,7 +41,7 @@ public class PluginManager
                 if (type != null)
                 {
                     var plugin = (IServicePlugin)ActivatorUtilities.CreateInstance(_provider, type)!;
-                    _services[plugin.Name] = (plugin, context, dll);
+                    _services[plugin.Name] = (type, context, dll);
                     _assemblies.Add(dll);
                 }
             }
@@ -60,7 +63,7 @@ public class PluginManager
                 var handler = (ICommandHandler)ActivatorUtilities.CreateInstance(_provider, type)!;
                 foreach (var command in handler.Commands)
                 {
-                    _handlers[command] = (handler, context, dll);
+                    _handlers[command] = (type, context, dll);
                 }
                 _assemblies.Add(dll);
             }
@@ -69,10 +72,24 @@ public class PluginManager
 
     public IEnumerable<string> LoadedAssemblies => _assemblies;
 
-    public ICommandHandler? GetHandler(string name) => _handlers.TryGetValue(name, out var value) ? value.Handler : null;
+    public ICommandHandler? GetHandler(string name)
+    {
+        if (_handlers.TryGetValue(name, out var value))
+        {
+            return (ICommandHandler)ActivatorUtilities.CreateInstance(_provider, value.HandlerType)!;
+        }
 
-    public IServicePlugin GetService(string name) => _services.TryGetValue(name, out var value)
-        ? value.Plugin
-        : throw new InvalidOperationException($"Service plugin {name} not loaded");
+        return null;
+    }
+
+    public IServicePlugin GetService(string name)
+    {
+        if (_services.TryGetValue(name, out var value))
+        {
+            return (IServicePlugin)ActivatorUtilities.CreateInstance(_provider, value.ServiceType)!;
+        }
+
+        throw new InvalidOperationException($"Service plugin {name} not loaded");
+    }
 }
 
