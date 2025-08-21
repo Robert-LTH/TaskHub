@@ -26,6 +26,7 @@ public class ActiveDirectoryServicePlugin : IServicePlugin
         }
     }
 
+=======
     public string Name => "activedirectory";
 
     public async Task<string> GetAsync(string resource, CancellationToken cancellationToken)
