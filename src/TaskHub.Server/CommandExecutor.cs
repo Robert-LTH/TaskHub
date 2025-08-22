@@ -1,20 +1,29 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using TaskHub.Abstractions;
+using Hangfire.Server;
 
 namespace TaskHub.Server;
 
-public class CommandExecutor
-{
-    private readonly PluginManager _manager;
-
-    public CommandExecutor(PluginManager manager)
+    public class CommandExecutor
     {
-        _manager = manager;
-    }
+        private readonly PluginManager _manager;
+
+        private static readonly ConcurrentDictionary<string, List<ExecutedCommandResult>> _history = new();
+
+        public CommandExecutor(PluginManager manager)
+        {
+            _manager = manager;
+        }
+
+        public static IReadOnlyList<ExecutedCommandResult>? GetHistory(string jobId)
+        {
+            return _history.TryGetValue(jobId, out var list) ? list : null;
+        }
 
     private async Task<JsonElement> ExecuteInternal(string command, JsonElement payload, CancellationToken token)
     {
@@ -34,13 +43,18 @@ public class CommandExecutor
         _ = await ExecuteInternal(command, payload, token);
     }
 
-    public async Task<JsonElement> ExecuteChain(IEnumerable<string> commands, JsonElement payload, CancellationToken token)
+    public async Task<JsonElement> ExecuteChain(IEnumerable<string> commands, JsonElement payload, PerformContext context, CancellationToken token)
     {
         var current = payload;
+        var results = new List<ExecutedCommandResult>();
         foreach (var command in commands)
         {
+            var ranAt = DateTimeOffset.UtcNow;
             current = await ExecuteInternal(command, current, token);
+            results.Add(new ExecutedCommandResult(command, ranAt, current));
         }
+
+        _history[context.BackgroundJob.Id] = results;
 
         return current;
     }

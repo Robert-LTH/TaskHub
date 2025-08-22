@@ -7,4 +7,5 @@ namespace TaskHub.Abstractions;
 /// </summary>
 /// <param name="Id">Identifier of the background job.</param>
 /// <param name="Status">Current status/state of the job.</param>
-public record CommandStatusResult(string Id, string Status);
+/// <param name="Commands">Commands that have been executed for the job.</param>
+public record CommandStatusResult(string Id, string Status, ExecutedCommandResult[] Commands);

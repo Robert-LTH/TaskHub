@@ -47,8 +47,8 @@ app.MapGet("/dlls", () => plugins.LoadedAssemblies);
 
 app.MapPost("/commands", (CommandChainRequest request, IBackgroundJobClient client) =>
 {
-    var jobId = client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, CancellationToken.None));
-    return Results.Ok(new EnqueuedCommandResult(jobId, request.Commands, DateTimeOffset.UtcNow));
+    var jobId = client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, null!, CancellationToken.None));
+    return Results.Ok(new EnqueuedCommandResult(jobId, Array.Empty<ExecutedCommandResult>(), DateTimeOffset.UtcNow));
 }).Produces<EnqueuedCommandResult>();
 
 app.MapPost("/commands/{id}/cancel", (string id, IBackgroundJobClient client) =>
@@ -65,7 +65,8 @@ app.MapGet("/commands/{id}", (string id) =>
     }
 
     var state = jobDetails.History.FirstOrDefault()?.StateName ?? "Unknown";
-    return Results.Ok(new CommandStatusResult(id, state));
+    var commands = CommandExecutor.GetHistory(id)?.ToArray() ?? Array.Empty<ExecutedCommandResult>();
+    return Results.Ok(new CommandStatusResult(id, state, commands));
 }).Produces<CommandStatusResult>();
 
 app.Run();
