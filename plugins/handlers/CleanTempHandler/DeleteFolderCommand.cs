@@ -8,21 +8,21 @@ namespace CleanTempHandler;
 
 public class DeleteFolderCommand : ICommand
 {
-    private readonly string _path;
-
-    public DeleteFolderCommand(string path)
+    public DeleteFolderCommand(DeleteFolderRequest request)
     {
-        _path = path;
+        Request = request;
     }
+
+    public DeleteFolderRequest Request { get; }
 
     public Task<JsonElement> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
-        if (Directory.Exists(_path))
+        if (Directory.Exists(Request.Path))
         {
-            Directory.Delete(_path, true);
+            Directory.Delete(Request.Path, true);
         }
 
-        return Task.FromResult(JsonSerializer.SerializeToElement(_path));
+        return Task.FromResult(JsonSerializer.SerializeToElement(Request.Path));
     }
 }
 
