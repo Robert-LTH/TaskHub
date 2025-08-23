@@ -8,17 +8,17 @@ namespace CleanTempHandler;
 
 public class CleanTempCommand : ICommand
 {
-    private readonly string _path;
-
-    public CleanTempCommand(string path)
+    public CleanTempCommand(CleanTempRequest request)
     {
-        _path = path;
+        Request = request;
     }
+
+    public CleanTempRequest Request { get; }
 
     public Task<JsonElement> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var cleaner = (Action<string>)service.GetService();
-        cleaner(_path);
-        return Task.FromResult(JsonSerializer.SerializeToElement(_path));
+        cleaner(Request.Path);
+        return Task.FromResult(JsonSerializer.SerializeToElement(Request.Path));
     }
 }

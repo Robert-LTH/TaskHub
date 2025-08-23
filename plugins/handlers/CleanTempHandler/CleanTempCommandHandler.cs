@@ -13,14 +13,16 @@ public class CleanTempCommandHandler :
 
     CleanTempCommand ICommandHandler<CleanTempCommand>.Create(JsonElement payload)
     {
-        var path = payload.TryGetProperty("path", out var element) ? element.GetString() : @"C:\\temp22";
-        return new CleanTempCommand(path ?? @"C:\\temp22");
+        var request = JsonSerializer.Deserialize<CleanTempRequest>(payload.GetRawText())
+                      ?? new CleanTempRequest();
+        return new CleanTempCommand(request);
     }
 
     DeleteFolderCommand ICommandHandler<DeleteFolderCommand>.Create(JsonElement payload)
     {
-        var path = payload.TryGetProperty("path", out var element) ? element.GetString() : @"C:\\temp22";
-        return new DeleteFolderCommand(path ?? @"C:\\temp22");
+        var request = JsonSerializer.Deserialize<DeleteFolderRequest>(payload.GetRawText())
+                      ?? new DeleteFolderRequest();
+        return new DeleteFolderCommand(request);
     }
 
     public ICommand Create(JsonElement payload) =>

@@ -31,3 +31,18 @@ An OpenAPI/Swagger UI powered by NSwag is available at `/swagger`.
 Plugins must be compiled and copied under the `plugins` directory as described in the project.
 The `TaskHub.Abstractions` project contains shared interfaces and result types and can be packaged as a NuGet
 dependency for plugin development.
+
+## ESLint
+
+For JavaScript or TypeScript plugins, run ESLint to ensure code quality:
+
+```bash
+npm test
+```
+
+If no `test` script is defined, you can run ESLint directly:
+
+```bash
+npx eslint .
+```
+
