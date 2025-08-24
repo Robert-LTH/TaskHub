@@ -2,6 +2,7 @@ using System.IO;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Net.WebSockets;
 using TaskHub.Abstractions;
 
 namespace CleanTempHandler;
@@ -15,7 +16,7 @@ public class DeleteFolderCommand : ICommand
 
     public DeleteFolderRequest Request { get; }
 
-    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken, ClientWebSocket? socket = null)
     {
         if (Directory.Exists(Request.Path))
         {

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Net.WebSockets;
 using TaskHub.Abstractions;
 using Hangfire.Server;
 
@@ -25,7 +26,7 @@ namespace TaskHub.Server;
             return _history.TryGetValue(jobId, out var list) ? list : null;
         }
 
-    private async Task<OperationResult> ExecuteInternal(string command, JsonElement payload, CancellationToken token)
+    private async Task<OperationResult> ExecuteInternal(string command, JsonElement payload, ClientWebSocket? socket, CancellationToken token)
     {
         var handler = _manager.GetHandler(command);
         if (handler == null)
@@ -35,15 +36,15 @@ namespace TaskHub.Server;
 
         var service = _manager.GetService(handler.ServiceName);
         var cmd = handler.Create(payload);
-        return await cmd.ExecuteAsync(service, token);
+        return await cmd.ExecuteAsync(service, token, socket);
     }
 
-    public async Task<OperationResult> Execute(string command, JsonElement payload, CancellationToken token)
+    public async Task<OperationResult> Execute(string command, JsonElement payload, CancellationToken token, ClientWebSocket? socket = null)
     {
-        return await ExecuteInternal(command, payload, token);
+        return await ExecuteInternal(command, payload, socket, token);
     }
 
-    public async Task<OperationResult> ExecuteChain(IEnumerable<string> commands, JsonElement payload, PerformContext context, CancellationToken token)
+    public async Task<OperationResult> ExecuteChain(IEnumerable<string> commands, JsonElement payload, PerformContext context, CancellationToken token, ClientWebSocket? socket = null)
     {
         var current = payload;
         var results = new List<ExecutedCommandResult>();
@@ -51,7 +52,7 @@ namespace TaskHub.Server;
         foreach (var command in commands)
         {
             var ranAt = DateTimeOffset.UtcNow;
-            lastResult = await ExecuteInternal(command, current, token);
+            lastResult = await ExecuteInternal(command, current, socket, token);
             var output = lastResult.Payload ?? JsonDocument.Parse("null").RootElement;
             results.Add(new ExecutedCommandResult(command, ranAt, output));
             current = output;

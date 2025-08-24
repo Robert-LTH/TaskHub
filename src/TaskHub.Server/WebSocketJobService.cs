@@ -78,7 +78,7 @@ public class WebSocketJobService : BackgroundService
                     var request = JsonSerializer.Deserialize<CommandChainRequest>(message);
                     if (request != null)
                     {
-                        _client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, null!, CancellationToken.None));
+                        _client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, null!, CancellationToken.None, socket));
                     }
                 }
                 catch (Exception ex)

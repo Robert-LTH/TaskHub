@@ -69,7 +69,10 @@ public class PluginManagerTests
 
     private class StubCommand : ICommand
     {
-        public System.Threading.Tasks.Task<OperationResult> ExecuteAsync(IServicePlugin service, System.Threading.CancellationToken cancellationToken)
+        public System.Threading.Tasks.Task<OperationResult> ExecuteAsync(
+            IServicePlugin service,
+            System.Threading.CancellationToken cancellationToken,
+            System.Net.WebSockets.ClientWebSocket? socket = null)
         {
             var element = System.Text.Json.JsonDocument.Parse("{}" ).RootElement;
             return System.Threading.Tasks.Task.FromResult(new OperationResult(element, "success"));
