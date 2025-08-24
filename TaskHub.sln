@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskHub.Abstractions", "src
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskHub.Server", "src/TaskHub.Server/TaskHub.Server.csproj", "{20BE2950-701D-4DFF-97A7-8DA41CB75EFE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskHub.WebSocketServer", "src/TaskHub.WebSocketServer/TaskHub.WebSocketServer.csproj", "{70293912-7C1C-4A0D-AD9A-B300E9186B20}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EchoHandler", "plugins/handlers/EchoHandler/EchoHandler.csproj", "{AFE3A644-3564-4B7A-9BFD-8AD4BFFDE6E5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HttpServicePlugin", "plugins/services/HttpServicePlugin/HttpServicePlugin.csproj", "{DB07147A-1AC2-4E01-9C32-82300A5243EB}"
@@ -50,6 +52,10 @@ Global
         {20BE2950-701D-4DFF-97A7-8DA41CB75EFE}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {20BE2950-701D-4DFF-97A7-8DA41CB75EFE}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {20BE2950-701D-4DFF-97A7-8DA41CB75EFE}.Release|Any CPU.Build.0 = Release|Any CPU
+        {70293912-7C1C-4A0D-AD9A-B300E9186B20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {70293912-7C1C-4A0D-AD9A-B300E9186B20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {70293912-7C1C-4A0D-AD9A-B300E9186B20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {70293912-7C1C-4A0D-AD9A-B300E9186B20}.Release|Any CPU.Build.0 = Release|Any CPU
         {AFE3A644-3564-4B7A-9BFD-8AD4BFFDE6E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
         {AFE3A644-3564-4B7A-9BFD-8AD4BFFDE6E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {AFE3A644-3564-4B7A-9BFD-8AD4BFFDE6E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
