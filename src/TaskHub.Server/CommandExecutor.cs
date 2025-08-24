@@ -25,12 +25,12 @@ namespace TaskHub.Server;
             return _history.TryGetValue(jobId, out var list) ? list : null;
         }
 
-    private async Task<JsonElement> ExecuteInternal(string command, JsonElement payload, CancellationToken token)
+    private async Task<OperationResult> ExecuteInternal(string command, JsonElement payload, CancellationToken token)
     {
         var handler = _manager.GetHandler(command);
         if (handler == null)
         {
-            throw new InvalidOperationException($"Handler {command} not found.");
+            return new OperationResult(null, $"Handler {command} not found.");
         }
 
         var service = _manager.GetService(handler.ServiceName);
@@ -38,24 +38,27 @@ namespace TaskHub.Server;
         return await cmd.ExecuteAsync(service, token);
     }
 
-    public async Task Execute(string command, JsonElement payload, CancellationToken token)
+    public async Task<OperationResult> Execute(string command, JsonElement payload, CancellationToken token)
     {
-        _ = await ExecuteInternal(command, payload, token);
+        return await ExecuteInternal(command, payload, token);
     }
 
-    public async Task<JsonElement> ExecuteChain(IEnumerable<string> commands, JsonElement payload, PerformContext context, CancellationToken token)
+    public async Task<OperationResult> ExecuteChain(IEnumerable<string> commands, JsonElement payload, PerformContext context, CancellationToken token)
     {
         var current = payload;
         var results = new List<ExecutedCommandResult>();
+        OperationResult lastResult = new OperationResult(null, "success");
         foreach (var command in commands)
         {
             var ranAt = DateTimeOffset.UtcNow;
-            current = await ExecuteInternal(command, current, token);
-            results.Add(new ExecutedCommandResult(command, ranAt, current));
+            lastResult = await ExecuteInternal(command, current, token);
+            var output = lastResult.Payload ?? JsonDocument.Parse("null").RootElement;
+            results.Add(new ExecutedCommandResult(command, ranAt, output));
+            current = output;
         }
 
         _history[context.BackgroundJob.Id] = results;
 
-        return current;
+        return lastResult;
     }
 }

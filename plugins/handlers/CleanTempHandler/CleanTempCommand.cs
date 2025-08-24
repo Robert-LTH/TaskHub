@@ -15,10 +15,11 @@ public class CleanTempCommand : ICommand
 
     public CleanTempRequest Request { get; }
 
-    public Task<JsonElement> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var cleaner = (Action<string>)service.GetService();
         cleaner(Request.Path);
-        return Task.FromResult(JsonSerializer.SerializeToElement(Request.Path));
+        var element = JsonSerializer.SerializeToElement(Request.Path);
+        return Task.FromResult(new OperationResult(element, "success"));
     }
 }

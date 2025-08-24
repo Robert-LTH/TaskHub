@@ -15,14 +15,15 @@ public class DeleteFolderCommand : ICommand
 
     public DeleteFolderRequest Request { get; }
 
-    public Task<JsonElement> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         if (Directory.Exists(Request.Path))
         {
             Directory.Delete(Request.Path, true);
         }
 
-        return Task.FromResult(JsonSerializer.SerializeToElement(Request.Path));
+        var element = JsonSerializer.SerializeToElement(Request.Path);
+        return Task.FromResult(new OperationResult(element, "success"));
     }
 }
 

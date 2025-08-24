@@ -18,7 +18,7 @@ public class RegistryServicePluginTests
     public void ReadMissingKeyReturnsError()
     {
         dynamic service = new RegistryServicePlugin().GetService();
-        ServiceResult result = service.Read("HKEY_CURRENT_USER\\Software\\TaskHub_Missing", "Value");
+        OperationResult result = service.Read("HKEY_CURRENT_USER\\Software\\TaskHub_Missing", "Value");
         Assert.Null(result.Payload);
         Assert.Contains("Registry key", result.Result);
     }
@@ -27,7 +27,7 @@ public class RegistryServicePluginTests
     public void WriteWithNullPropertyReturnsError()
     {
         dynamic service = new RegistryServicePlugin().GetService();
-        ServiceResult result = service.Write("HKEY_CURRENT_USER\\Software\\TaskHub_Test", null!, "value");
+        OperationResult result = service.Write("HKEY_CURRENT_USER\\Software\\TaskHub_Test", null!, "value");
         Assert.Null(result.Payload);
         Assert.Contains("Failed to write", result.Result);
     }
