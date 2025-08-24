@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using TaskHub.Abstractions;
 
 namespace TaskHub.Server;
@@ -17,10 +19,12 @@ public class PluginManager
     private readonly Dictionary<string, (Type ServiceType, PluginLoadContext Context, string AssemblyPath)> _services = new();
     private readonly List<string> _assemblies = new();
     private readonly IServiceProvider _provider;
+    private readonly ILogger<PluginManager> _logger;
 
     public PluginManager(IServiceProvider provider)
     {
         _provider = provider;
+        _logger = provider.GetService<ILogger<PluginManager>>() ?? NullLogger<PluginManager>.Instance;
     }
 
     public void Load(string root)
@@ -33,16 +37,23 @@ public class PluginManager
             {
                 var name = Path.GetFileName(dir).Replace("ServicePlugin", string.Empty);
                 if (!config.GetSection($"PluginSettings:{name}").Exists()) continue;
-                var dll = Directory.GetFiles(dir, "*.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
-                if (dll == null) continue;
-                var context = new PluginLoadContext(dll);
-                var asm = context.LoadFromAssemblyPath(dll);
-                var type = asm.GetTypes().FirstOrDefault(t => typeof(IServicePlugin).IsAssignableFrom(t) && !t.IsAbstract);
-                if (type != null)
+                try
                 {
-                    var plugin = (IServicePlugin)ActivatorUtilities.CreateInstance(_provider, type)!;
-                    _services[plugin.Name] = (type, context, dll);
-                    _assemblies.Add(dll);
+                    var dll = Directory.GetFiles(dir, "*.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
+                    if (dll == null) continue;
+                    var context = new PluginLoadContext(dll);
+                    var asm = context.LoadFromAssemblyPath(dll);
+                    var type = asm.GetTypes().FirstOrDefault(t => typeof(IServicePlugin).IsAssignableFrom(t) && !t.IsAbstract);
+                    if (type != null)
+                    {
+                        var plugin = (IServicePlugin)ActivatorUtilities.CreateInstance(_provider, type)!;
+                        _services[plugin.Name] = (type, context, dll);
+                        _assemblies.Add(dll);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to load service plugin from {Directory}", dir);
                 }
             }
         }
@@ -54,18 +65,25 @@ public class PluginManager
             {
                 var name = Path.GetFileName(dir).Replace("Handler", string.Empty);
                 if (!config.GetSection($"PluginSettings:{name}").Exists()) continue;
-                var dll = Directory.GetFiles(dir, "*.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
-                if (dll == null) continue;
-                var context = new PluginLoadContext(dll);
-                var asm = context.LoadFromAssemblyPath(dll);
-                var type = asm.GetTypes().FirstOrDefault(t => typeof(ICommandHandler).IsAssignableFrom(t) && !t.IsAbstract);
-                if (type == null) continue;
-                var handler = (ICommandHandler)ActivatorUtilities.CreateInstance(_provider, type)!;
-                foreach (var command in handler.Commands)
+                try
                 {
-                    _handlers[command] = (type, context, dll);
+                    var dll = Directory.GetFiles(dir, "*.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
+                    if (dll == null) continue;
+                    var context = new PluginLoadContext(dll);
+                    var asm = context.LoadFromAssemblyPath(dll);
+                    var type = asm.GetTypes().FirstOrDefault(t => typeof(ICommandHandler).IsAssignableFrom(t) && !t.IsAbstract);
+                    if (type == null) continue;
+                    var handler = (ICommandHandler)ActivatorUtilities.CreateInstance(_provider, type)!;
+                    foreach (var command in handler.Commands)
+                    {
+                        _handlers[command] = (type, context, dll);
+                    }
+                    _assemblies.Add(dll);
                 }
-                _assemblies.Add(dll);
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to load handler plugin from {Directory}", dir);
+                }
             }
         }
     }
