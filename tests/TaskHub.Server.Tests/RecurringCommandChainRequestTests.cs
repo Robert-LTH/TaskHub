@@ -16,6 +16,7 @@ public class RecurringCommandChainRequestTests
         Assert.Equal(new[] { "echo" }, request.Commands);
         Assert.Equal("* * * * *", request.CronExpression);
         Assert.Equal(TimeSpan.FromMinutes(1), request.Delay);
+        Assert.Null(request.Signature);
     }
 }
 
