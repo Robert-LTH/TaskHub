@@ -17,6 +17,12 @@ builder.Services.AddSingleton<PluginManager>();
 builder.Services.AddSingleton<CommandExecutor>();
 builder.Services.AddOpenApiDocument();
 
+var jobHandlingMode = builder.Configuration.GetValue<string>("JobHandling:Mode");
+if (string.Equals(jobHandlingMode, "WebSocket", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddHostedService<WebSocketJobService>();
+}
+
 var app = builder.Build();
 
 app.UseOpenApi();
@@ -31,7 +37,11 @@ var pluginManager = app.Services.GetRequiredService<PluginManager>();
 pluginManager.Load(Path.Combine(AppContext.BaseDirectory, "plugins"));
 
 app.MapPluginEndpoints();
-app.MapCommandEndpoints();
+
+if (!string.Equals(jobHandlingMode, "WebSocket", StringComparison.OrdinalIgnoreCase))
+{
+    app.MapCommandEndpoints();
+}
 
 app.Run();
 

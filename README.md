@@ -32,6 +32,12 @@ Plugins must be compiled and copied under the `plugins` directory as described i
 The `TaskHub.Abstractions` project contains shared interfaces and result types and can be packaged as a NuGet
 dependency for plugin development.
 
+### Job handling modes
+
+The server handles job submissions through the HTTP API by default. Set `JobHandling:Mode` in
+`appsettings.json` to `WebSocket` and provide `JobHandling:WebSocketServerUrl` to receive jobs from a remote
+server over a WebSocket connection instead.
+
 ## ESLint
 
 For JavaScript or TypeScript plugins, run ESLint to ensure code quality:
