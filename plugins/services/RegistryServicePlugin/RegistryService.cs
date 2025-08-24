@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json;
 using Microsoft.Win32;
 using TaskHub.Abstractions;
 
@@ -12,7 +13,7 @@ public class RegistryServicePlugin : IServicePlugin
 
     private class RegistryService
     {
-        public ServiceResult Read(string keyPath, string property)
+        public OperationResult Read(string keyPath, string property)
         {
             try
             {
@@ -20,24 +21,25 @@ public class RegistryServicePlugin : IServicePlugin
                 using var key = hive.OpenSubKey(subKey);
                 if (key == null)
                 {
-                    return new ServiceResult(null, $"Registry key '{keyPath}' not found");
+                    return new OperationResult(null, $"Registry key '{keyPath}' not found");
                 }
 
                 var value = key.GetValue(property);
                 if (value == null)
                 {
-                    return new ServiceResult(null, $"Property '{property}' not found in '{keyPath}'");
+                    return new OperationResult(null, $"Property '{property}' not found in '{keyPath}'");
                 }
 
-                return new ServiceResult(value, "success");
+                var element = JsonSerializer.SerializeToElement(value);
+                return new OperationResult(element, "success");
             }
             catch (Exception ex)
             {
-                return new ServiceResult(null, $"Failed to read '{property}' from '{keyPath}': {ex.Message}");
+                return new OperationResult(null, $"Failed to read '{property}' from '{keyPath}': {ex.Message}");
             }
         }
 
-        public ServiceResult Write(string keyPath, string property, object value)
+        public OperationResult Write(string keyPath, string property, object value)
         {
             try
             {
@@ -45,15 +47,16 @@ public class RegistryServicePlugin : IServicePlugin
                 using var key = hive.CreateSubKey(subKey);
                 if (key == null)
                 {
-                    return new ServiceResult(null, $"Registry key '{keyPath}' could not be opened");
+                    return new OperationResult(null, $"Registry key '{keyPath}' could not be opened");
                 }
 
                 key.SetValue(property, value);
-                return new ServiceResult(value, "success");
+                var element = JsonSerializer.SerializeToElement(value);
+                return new OperationResult(element, "success");
             }
             catch (Exception ex)
             {
-                return new ServiceResult(null, $"Failed to write '{property}' to '{keyPath}': {ex.Message}");
+                return new OperationResult(null, $"Failed to write '{property}' to '{keyPath}': {ex.Message}");
             }
         }
 

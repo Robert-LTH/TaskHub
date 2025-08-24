@@ -1,11 +1,11 @@
 namespace TaskHub.Abstractions;
 
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Text.Json;
 
 public interface ICommand
 {
-    Task<JsonElement> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken);
+    Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken);
 }
 

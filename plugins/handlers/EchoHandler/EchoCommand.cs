@@ -16,12 +16,12 @@ public class EchoCommand : ICommand
 
     public EchoRequest Request { get; }
 
-    public async Task<JsonElement> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
+    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var client = (HttpClient)service.GetService();
         var result = await client.GetStringAsync(Request.Resource, cancellationToken);
         Console.WriteLine($"Echo: {result}");
-        return JsonSerializer.SerializeToElement(result);
+        return new OperationResult(JsonSerializer.SerializeToElement(result), "success");
     }
 }
 
