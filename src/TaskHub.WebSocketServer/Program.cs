@@ -2,11 +2,14 @@ using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
-var sockets = new ConcurrentDictionary<WebSocket, byte>();
+var connections = new ConcurrentDictionary<string, ClientConnection>();
+
+record ClientConnection(WebSocket Socket, IDictionary<string, string> Criteria);
 
 app.UseWebSockets();
 
@@ -20,8 +23,26 @@ app.Map("/ws", async context =>
         return;
     }
 
+    var id = context.Request.Query["id"].FirstOrDefault();
+    var criteria = context.Request.Query
+        .Where(q => q.Key != "id")
+        .ToDictionary(q => q.Key, q => q.Value.ToString());
+
+    if (string.IsNullOrEmpty(id))
+    {
+        id = Guid.NewGuid().ToString();
+    }
+
     using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-    sockets.TryAdd(webSocket, 0);
+    var connection = new ClientConnection(webSocket, criteria);
+    connections.TryAdd(id, connection);
+
+    // inform client of assigned connection id when none was provided
+    if (!context.Request.Query.ContainsKey("id"))
+    {
+        var idMsg = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { connectionId = id }));
+        await webSocket.SendAsync(new ArraySegment<byte>(idMsg), WebSocketMessageType.Text, true, CancellationToken.None);
+    }
 
     var buffer = new byte[1024 * 4];
     var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
@@ -31,7 +52,7 @@ app.Map("/ws", async context =>
         result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
     }
 
-    sockets.TryRemove(webSocket, out _);
+    connections.TryRemove(id, out _);
     await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
 });
 
@@ -43,11 +64,34 @@ app.MapPost("/command", async (JsonElement request) =>
     }
 
     var message = Encoding.UTF8.GetBytes(commandEl.GetRawText());
-    foreach (var socket in sockets.Keys)
+
+    IEnumerable<ClientConnection> targets = connections.Values;
+
+    if (request.TryGetProperty("connectionId", out var idEl) && idEl.GetString() is { } connectionId)
     {
-        if (socket.State == WebSocketState.Open)
+        if (connections.TryGetValue(connectionId, out var connection))
         {
-            await socket.SendAsync(new ArraySegment<byte>(message), WebSocketMessageType.Text, true, CancellationToken.None);
+            targets = new[] { connection };
+        }
+        else
+        {
+            return Results.NotFound();
+        }
+    }
+    else if (request.TryGetProperty("criteria", out var criteriaEl) && criteriaEl.ValueKind == JsonValueKind.Object)
+    {
+        var filters = criteriaEl.EnumerateObject()
+            .Where(p => p.Value.ValueKind == JsonValueKind.String)
+            .ToDictionary(p => p.Name, p => p.Value.GetString()!);
+
+        targets = connections.Values.Where(c => filters.All(f => c.Criteria.TryGetValue(f.Key, out var v) && v == f.Value));
+    }
+
+    foreach (var target in targets)
+    {
+        if (target.Socket.State == WebSocketState.Open)
+        {
+            await target.Socket.SendAsync(new ArraySegment<byte>(message), WebSocketMessageType.Text, true, CancellationToken.None);
         }
     }
 
