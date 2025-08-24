@@ -18,6 +18,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CleanTempHandler", "plugins
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileSystemServicePlugin", "plugins/services/FileSystemServicePlugin/FileSystemServicePlugin.csproj", "{3C4176EF-E2B9-4311-92D5-B1BA60C226B3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RegistryServicePlugin", "plugins/services/RegistryServicePlugin/RegistryServicePlugin.csproj", "{17CC2649-0CF3-451D-9BA2-F73B9C4C6793}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskHub.Server.Tests", "tests/TaskHub.Server.Tests/TaskHub.Server.Tests.csproj", "{FF3F77A7-CF65-4B57-8099-1D583FFE64B3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EchoHandler.Tests", "tests/EchoHandler.Tests/EchoHandler.Tests.csproj", "{8054CBD6-946B-4D55-BDC5-4E6F9049C5A6}"
@@ -31,6 +33,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ActiveDirectoryServicePlugin.Tests", "tests/ActiveDirectoryServicePlugin.Tests/ActiveDirectoryServicePlugin.Tests.csproj", "{30C007D9-21C4-428B-875B-026888436985}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MsGraphServicePlugin.Tests", "tests/MsGraphServicePlugin.Tests/MsGraphServicePlugin.Tests.csproj", "{28CF54EA-C802-4EB7-9C1C-EFE5695EA0A0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RegistryServicePlugin.Tests", "tests/RegistryServicePlugin.Tests/RegistryServicePlugin.Tests.csproj", "{EA15A8F3-852D-467C-857A-A8FC85486457}"
 EndProject
 Global
     GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -98,6 +102,14 @@ Global
         {28CF54EA-C802-4EB7-9C1C-EFE5695EA0A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {28CF54EA-C802-4EB7-9C1C-EFE5695EA0A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {28CF54EA-C802-4EB7-9C1C-EFE5695EA0A0}.Release|Any CPU.Build.0 = Release|Any CPU
+        {17CC2649-0CF3-451D-9BA2-F73B9C4C6793}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {17CC2649-0CF3-451D-9BA2-F73B9C4C6793}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {17CC2649-0CF3-451D-9BA2-F73B9C4C6793}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {17CC2649-0CF3-451D-9BA2-F73B9C4C6793}.Release|Any CPU.Build.0 = Release|Any CPU
+        {EA15A8F3-852D-467C-857A-A8FC85486457}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {EA15A8F3-852D-467C-857A-A8FC85486457}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {EA15A8F3-852D-467C-857A-A8FC85486457}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {EA15A8F3-852D-467C-857A-A8FC85486457}.Release|Any CPU.Build.0 = Release|Any CPU
     EndGlobalSection
     GlobalSection(SolutionProperties) = preSolution
         HideSolutionNode = FALSE
