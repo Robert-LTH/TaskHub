@@ -81,5 +81,6 @@ public class PluginManagerTests
         public string ServiceName => "Stub";
         public StubCommand Create(System.Text.Json.JsonElement payload) => new StubCommand();
         ICommand ICommandHandler.Create(System.Text.Json.JsonElement payload) => Create(payload);
+        public void OnLoaded(IServiceProvider services) { }
     }
 }

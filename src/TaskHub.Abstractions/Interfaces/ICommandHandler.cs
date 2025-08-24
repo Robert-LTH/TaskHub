@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 
@@ -8,6 +9,7 @@ public interface ICommandHandler
     IReadOnlyCollection<string> Commands { get; }
     string ServiceName { get; }
     ICommand Create(JsonElement payload);
+    void OnLoaded(IServiceProvider services);
 }
 
 public interface ICommandHandler<out TCommand> : ICommandHandler where TCommand : ICommand

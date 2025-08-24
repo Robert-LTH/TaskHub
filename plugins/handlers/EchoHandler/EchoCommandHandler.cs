@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using TaskHub.Abstractions;
@@ -15,5 +16,7 @@ public class EchoCommandHandler : ICommandHandler<EchoCommand>
                       ?? new EchoRequest();
         return new EchoCommand(request);
     }
+
+    public void OnLoaded(IServiceProvider services) { }
 }
 

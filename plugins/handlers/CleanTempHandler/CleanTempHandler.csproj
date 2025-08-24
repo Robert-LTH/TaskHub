@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\\..\\..\\src\\TaskHub.Abstractions\\TaskHub.Abstractions.csproj" />
+    <ProjectReference Include="..\\..\\..\\src\\TaskHub.Server\\TaskHub.Server.csproj" />
   </ItemGroup>
   <Target Name="CopyToRoot" AfterTargets="Build">
     <ItemGroup>
