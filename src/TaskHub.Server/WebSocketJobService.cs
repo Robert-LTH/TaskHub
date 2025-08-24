@@ -13,12 +13,14 @@ public class WebSocketJobService : BackgroundService
     private readonly IConfiguration _configuration;
     private readonly ILogger<WebSocketJobService> _logger;
     private readonly IBackgroundJobClient _client;
+    private readonly PayloadVerifier _verifier;
 
-    public WebSocketJobService(IConfiguration configuration, ILogger<WebSocketJobService> logger, IBackgroundJobClient client)
+    public WebSocketJobService(IConfiguration configuration, ILogger<WebSocketJobService> logger, IBackgroundJobClient client, PayloadVerifier verifier)
     {
         _configuration = configuration;
         _logger = logger;
         _client = client;
+        _verifier = verifier;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -78,7 +80,14 @@ public class WebSocketJobService : BackgroundService
                     var request = JsonSerializer.Deserialize<CommandChainRequest>(message);
                     if (request != null)
                     {
-                        _client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, null!, CancellationToken.None, socket));
+                        if (_verifier.Verify(request.Payload, request.Signature))
+                        {
+                            _client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, null!, CancellationToken.None, socket));
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Invalid payload signature: {Message}", message);
+                        }
                     }
                 }
                 catch (Exception ex)

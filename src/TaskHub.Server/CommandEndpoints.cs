@@ -12,14 +12,22 @@ public static class CommandEndpoints
 {
     public static IEndpointRouteBuilder MapCommandEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/commands", (CommandChainRequest request, IBackgroundJobClient client) =>
+        app.MapPost("/commands", (CommandChainRequest request, IBackgroundJobClient client, PayloadVerifier verifier) =>
         {
+            if (!verifier.Verify(request.Payload, request.Signature))
+            {
+                return Results.Unauthorized();
+            }
             var jobId = client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, null!, CancellationToken.None));
             return Results.Ok(new EnqueuedCommandResult(jobId, Array.Empty<ExecutedCommandResult>(), DateTimeOffset.UtcNow));
         }).Produces<EnqueuedCommandResult>();
 
-        app.MapPost("/commands/recurring", (RecurringCommandChainRequest request, IBackgroundJobClient client) =>
+        app.MapPost("/commands/recurring", (RecurringCommandChainRequest request, IBackgroundJobClient client, PayloadVerifier verifier) =>
         {
+            if (!verifier.Verify(request.Payload, request.Signature))
+            {
+                return Results.Unauthorized();
+            }
             var jobId = Guid.NewGuid().ToString();
             client.Schedule(() => RecurringJob.AddOrUpdate<CommandExecutor>(jobId, exec => exec.ExecuteChain(request.Commands, request.Payload, null!, CancellationToken.None), request.CronExpression), request.Delay);
             return Results.Ok(new EnqueuedCommandResult(jobId, Array.Empty<ExecutedCommandResult>(), DateTimeOffset.UtcNow.Add(request.Delay)));

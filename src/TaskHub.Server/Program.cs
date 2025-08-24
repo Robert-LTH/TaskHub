@@ -15,6 +15,7 @@ builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
 builder.Services.AddSingleton<PluginManager>();
 builder.Services.AddSingleton<CommandExecutor>();
+builder.Services.AddSingleton<PayloadVerifier>();
 builder.Services.AddOpenApiDocument();
 
 var jobHandlingMode = builder.Configuration.GetValue<string>("JobHandling:Mode");
