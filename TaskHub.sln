@@ -18,6 +18,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CleanTempHandler", "plugins
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileSystemServicePlugin", "plugins/services/FileSystemServicePlugin/FileSystemServicePlugin.csproj", "{3C4176EF-E2B9-4311-92D5-B1BA60C226B3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskHub.Server.Tests", "tests/TaskHub.Server.Tests/TaskHub.Server.Tests.csproj", "{FF3F77A7-CF65-4B57-8099-1D583FFE64B3}"
+EndProject
 Global
     GlobalSection(SolutionConfigurationPlatforms) = preSolution
         Debug|Any CPU = Debug|Any CPU
@@ -56,6 +58,10 @@ Global
         {3C4176EF-E2B9-4311-92D5-B1BA60C226B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {3C4176EF-E2B9-4311-92D5-B1BA60C226B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {3C4176EF-E2B9-4311-92D5-B1BA60C226B3}.Release|Any CPU.Build.0 = Release|Any CPU
+        {FF3F77A7-CF65-4B57-8099-1D583FFE64B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {FF3F77A7-CF65-4B57-8099-1D583FFE64B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {FF3F77A7-CF65-4B57-8099-1D583FFE64B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {FF3F77A7-CF65-4B57-8099-1D583FFE64B3}.Release|Any CPU.Build.0 = Release|Any CPU
     EndGlobalSection
     GlobalSection(SolutionProperties) = preSolution
         HideSolutionNode = FALSE
