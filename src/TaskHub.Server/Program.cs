@@ -2,7 +2,6 @@ using Hangfire;
 using Hangfire.MemoryStorage;
 using Hangfire.Dashboard;
 using Microsoft.Extensions.Configuration;
-using System.Text.Json;
 using TaskHub.Server;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,12 +29,6 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 
 var pluginManager = app.Services.GetRequiredService<PluginManager>();
 pluginManager.Load(Path.Combine(AppContext.BaseDirectory, "plugins"));
-
-var payload = JsonSerializer.Deserialize<JsonElement>("{}");
-RecurringJob.AddOrUpdate<CommandExecutor>(
-    "clean-temp",
-    exec => exec.Execute("clean-temp", payload, CancellationToken.None),
-    Cron.HourInterval(7));
 
 app.MapPluginEndpoints();
 app.MapCommandEndpoints();

@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Hangfire;
 using Microsoft.AspNetCore.Builder;
@@ -15,6 +16,13 @@ public static class CommandEndpoints
         {
             var jobId = client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, null!, CancellationToken.None));
             return Results.Ok(new EnqueuedCommandResult(jobId, Array.Empty<ExecutedCommandResult>(), DateTimeOffset.UtcNow));
+        }).Produces<EnqueuedCommandResult>();
+
+        app.MapPost("/commands/recurring", (RecurringCommandChainRequest request, IBackgroundJobClient client) =>
+        {
+            var jobId = Guid.NewGuid().ToString();
+            client.Schedule(() => RecurringJob.AddOrUpdate<CommandExecutor>(jobId, exec => exec.ExecuteChain(request.Commands, request.Payload, null!, CancellationToken.None), request.CronExpression), request.Delay);
+            return Results.Ok(new EnqueuedCommandResult(jobId, Array.Empty<ExecutedCommandResult>(), DateTimeOffset.UtcNow.Add(request.Delay)));
         }).Produces<EnqueuedCommandResult>();
 
         app.MapPost("/commands/{id}/cancel", (string id, IBackgroundJobClient client) =>

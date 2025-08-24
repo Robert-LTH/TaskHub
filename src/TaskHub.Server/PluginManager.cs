@@ -74,6 +74,7 @@ public class PluginManager
                     var type = asm.GetTypes().FirstOrDefault(t => typeof(ICommandHandler).IsAssignableFrom(t) && !t.IsAbstract);
                     if (type == null) continue;
                     var handler = (ICommandHandler)ActivatorUtilities.CreateInstance(_provider, type)!;
+                    handler.OnLoaded(_provider);
                     foreach (var command in handler.Commands)
                     {
                         _handlers[command] = (type, context, dll);
