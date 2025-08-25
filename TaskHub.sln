@@ -24,6 +24,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RegistryServicePlugin", "pl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigurationManagerServicePlugin", "plugins/services/ConfigurationManagerServicePlugin/ConfigurationManagerServicePlugin.csproj", "{33C374C4-43A3-49FD-93B2-21485F2381CD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigurationManagerAdminServicePlugin", "plugins/services/ConfigurationManagerAdminServicePlugin/ConfigurationManagerAdminServicePlugin.csproj", "{D116BFAD-093B-4BD6-9F9F-07C9383776A9}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskHub.Server.Tests", "tests/TaskHub.Server.Tests/TaskHub.Server.Tests.csproj", "{FF3F77A7-CF65-4B57-8099-1D583FFE64B3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EchoHandler.Tests", "tests/EchoHandler.Tests/EchoHandler.Tests.csproj", "{8054CBD6-946B-4D55-BDC5-4E6F9049C5A6}"
@@ -41,6 +43,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RegistryServicePlugin.Tests", "tests/RegistryServicePlugin.Tests/RegistryServicePlugin.Tests.csproj", "{EA15A8F3-852D-467C-857A-A8FC85486457}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigurationManagerServicePlugin.Tests", "tests/ConfigurationManagerServicePlugin.Tests/ConfigurationManagerServicePlugin.Tests.csproj", "{6D397CB3-9F07-4646-A850-D54214A54B3E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigurationManagerAdminServicePlugin.Tests", "tests/ConfigurationManagerAdminServicePlugin.Tests/ConfigurationManagerAdminServicePlugin.Tests.csproj", "{141CEA8D-5CC4-4D0A-B4AC-A05BF6AD9637}"
 EndProject
 Global
     GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -124,10 +128,18 @@ Global
         {33C374C4-43A3-49FD-93B2-21485F2381CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {33C374C4-43A3-49FD-93B2-21485F2381CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {33C374C4-43A3-49FD-93B2-21485F2381CD}.Release|Any CPU.Build.0 = Release|Any CPU
+        {D116BFAD-093B-4BD6-9F9F-07C9383776A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {D116BFAD-093B-4BD6-9F9F-07C9383776A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {D116BFAD-093B-4BD6-9F9F-07C9383776A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {D116BFAD-093B-4BD6-9F9F-07C9383776A9}.Release|Any CPU.Build.0 = Release|Any CPU
         {6D397CB3-9F07-4646-A850-D54214A54B3E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
         {6D397CB3-9F07-4646-A850-D54214A54B3E}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {6D397CB3-9F07-4646-A850-D54214A54B3E}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {6D397CB3-9F07-4646-A850-D54214A54B3E}.Release|Any CPU.Build.0 = Release|Any CPU
+        {141CEA8D-5CC4-4D0A-B4AC-A05BF6AD9637}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {141CEA8D-5CC4-4D0A-B4AC-A05BF6AD9637}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {141CEA8D-5CC4-4D0A-B4AC-A05BF6AD9637}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {141CEA8D-5CC4-4D0A-B4AC-A05BF6AD9637}.Release|Any CPU.Build.0 = Release|Any CPU
     EndGlobalSection
     GlobalSection(SolutionProperties) = preSolution
         HideSolutionNode = FALSE
