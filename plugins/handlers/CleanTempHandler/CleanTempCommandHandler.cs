@@ -10,11 +10,12 @@ using TaskHub.Server;
 namespace CleanTempHandler;
 
 public class CleanTempCommandHandler :
+    CommandHandlerBase,
     ICommandHandler<CleanTempCommand>,
     ICommandHandler<DeleteFolderCommand>
 {
-    public IReadOnlyCollection<string> Commands => new[] { "clean-temp", "delete-folder" };
-    public string ServiceName => "filesystem";
+    public override IReadOnlyCollection<string> Commands => new[] { "clean-temp", "delete-folder" };
+    public override string ServiceName => "filesystem";
 
     CleanTempCommand ICommandHandler<CleanTempCommand>.Create(JsonElement payload)
     {
@@ -30,10 +31,10 @@ public class CleanTempCommandHandler :
         return new DeleteFolderCommand(request);
     }
 
-    public ICommand Create(JsonElement payload) =>
+    public override ICommand Create(JsonElement payload) =>
         ((ICommandHandler<CleanTempCommand>)this).Create(payload);
 
-    public void OnLoaded(IServiceProvider services)
+    public override void OnLoaded(IServiceProvider services)
     {
         var recurringJobs = services.GetRequiredService<IRecurringJobManager>();
         var payload = JsonSerializer.Deserialize<JsonElement>("{}");

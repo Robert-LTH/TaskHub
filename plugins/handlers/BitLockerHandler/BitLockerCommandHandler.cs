@@ -11,13 +11,13 @@ using TaskHub.Abstractions;
 
 namespace BitLockerHandler;
 
-public class BitLockerCommandHandler : ICommandHandler<RotateKeyCommand>
+public class BitLockerCommandHandler : CommandHandlerBase, ICommandHandler<RotateKeyCommand>
 {
     private static HubConnection? _connection;
     private static BitLockerService? _service;
 
-    public IReadOnlyCollection<string> Commands => new[] { "bitlocker-rotate" };
-    public string ServiceName => "bitlocker";
+    public override IReadOnlyCollection<string> Commands => new[] { "bitlocker-rotate" };
+    public override string ServiceName => "bitlocker";
 
     public RotateKeyCommand Create(JsonElement payload)
     {
@@ -25,9 +25,9 @@ public class BitLockerCommandHandler : ICommandHandler<RotateKeyCommand>
         return new RotateKeyCommand(request);
     }
 
-    public ICommand Create(JsonElement payload) => Create(payload);
+    public override ICommand Create(JsonElement payload) => Create(payload);
 
-    public void OnLoaded(IServiceProvider services)
+    public override void OnLoaded(IServiceProvider services)
     {
         var logger = services.GetRequiredService<ILogger<BitLockerService>>();
         var config = services.GetService<IConfiguration>();

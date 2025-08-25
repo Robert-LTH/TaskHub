@@ -5,10 +5,10 @@ using TaskHub.Abstractions;
 
 namespace CcmExecHandler;
 
-public class CcmExecCommandHandler : ICommandHandler<TriggerScheduleCommand>
+public class CcmExecCommandHandler : CommandHandlerBase, ICommandHandler<TriggerScheduleCommand>
 {
-    public IReadOnlyCollection<string> Commands => new[] { "ccmexwc" };
-    public string ServiceName => "configurationmanager";
+    public override IReadOnlyCollection<string> Commands => new[] { "ccmexwc" };
+    public override string ServiceName => "configurationmanager";
 
     public TriggerScheduleCommand Create(JsonElement payload)
     {
@@ -17,7 +17,7 @@ public class CcmExecCommandHandler : ICommandHandler<TriggerScheduleCommand>
         return new TriggerScheduleCommand(request);
     }
 
-    public ICommand Create(JsonElement payload) => Create(payload);
+    public override ICommand Create(JsonElement payload) => Create(payload);
 
-    public void OnLoaded(IServiceProvider services) { }
+    public override void OnLoaded(IServiceProvider services) { }
 }

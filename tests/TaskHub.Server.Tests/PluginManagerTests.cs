@@ -79,12 +79,12 @@ public class PluginManagerTests
         }
     }
 
-    private class StubHandler : ICommandHandler<StubCommand>
+    private class StubHandler : CommandHandlerBase, ICommandHandler<StubCommand>
     {
-        public IReadOnlyCollection<string> Commands => new[] { "stub" };
-        public string ServiceName => "Stub";
+        public override IReadOnlyCollection<string> Commands => new[] { "stub" };
+        public override string ServiceName => "Stub";
         public StubCommand Create(System.Text.Json.JsonElement payload) => new StubCommand();
-        ICommand ICommandHandler.Create(System.Text.Json.JsonElement payload) => Create(payload);
-        public void OnLoaded(IServiceProvider services) { }
+        public override ICommand Create(System.Text.Json.JsonElement payload) => Create(payload);
+        public override void OnLoaded(IServiceProvider services) { }
     }
 }

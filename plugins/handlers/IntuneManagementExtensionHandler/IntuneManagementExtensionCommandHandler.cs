@@ -5,10 +5,10 @@ using TaskHub.Abstractions;
 
 namespace IntuneManagementExtensionHandler;
 
-public class IntuneManagementExtensionCommandHandler : ICommandHandler<TriggerSyncCommand>
+public class IntuneManagementExtensionCommandHandler : CommandHandlerBase, ICommandHandler<TriggerSyncCommand>
 {
-    public IReadOnlyCollection<string> Commands => new[] { "intune-sync" };
-    public string ServiceName => "powershell";
+    public override IReadOnlyCollection<string> Commands => new[] { "intune-sync" };
+    public override string ServiceName => "powershell";
 
     public TriggerSyncCommand Create(JsonElement payload)
     {
@@ -16,7 +16,7 @@ public class IntuneManagementExtensionCommandHandler : ICommandHandler<TriggerSy
         return new TriggerSyncCommand(request);
     }
 
-    public ICommand Create(JsonElement payload) => Create(payload);
+    public override ICommand Create(JsonElement payload) => Create(payload);
 
-    public void OnLoaded(IServiceProvider services) { }
+    public override void OnLoaded(IServiceProvider services) { }
 }
