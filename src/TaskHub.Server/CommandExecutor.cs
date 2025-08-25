@@ -35,8 +35,7 @@ namespace TaskHub.Server;
         }
 
         var service = _manager.GetService(handler.ServiceName);
-        var cmd = handler.Create(payload);
-        return await cmd.ExecuteAsync(service, token, socket);
+        return await handler.ExecuteAsync(payload, service, socket, token);
     }
 
     public async Task<OperationResult> Execute(string command, JsonElement payload, CancellationToken token, ClientWebSocket? socket = null)

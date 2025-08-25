@@ -5,10 +5,10 @@ using TaskHub.Abstractions;
 
 namespace MonitorHandler;
 
-public class MonitorCommandHandler : ICommandHandler<MonitorInfoCommand>
+public class MonitorCommandHandler : CommandHandlerBase, ICommandHandler<MonitorInfoCommand>
 {
-    public IReadOnlyCollection<string> Commands => new[] { "monitor-info" };
-    public string ServiceName => "monitor";
+    public override IReadOnlyCollection<string> Commands => new[] { "monitor-info" };
+    public override string ServiceName => "monitor";
 
     public MonitorInfoCommand Create(JsonElement payload)
     {
@@ -16,8 +16,8 @@ public class MonitorCommandHandler : ICommandHandler<MonitorInfoCommand>
         return new MonitorInfoCommand(request);
     }
 
-    ICommand ICommandHandler.Create(JsonElement payload) => Create(payload);
+    public override ICommand Create(JsonElement payload) => Create(payload);
 
-    public void OnLoaded(IServiceProvider services) { }
+    public override void OnLoaded(IServiceProvider services) { }
 }
 

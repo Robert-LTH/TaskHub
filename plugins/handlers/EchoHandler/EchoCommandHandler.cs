@@ -5,10 +5,10 @@ using TaskHub.Abstractions;
 
 namespace EchoHandler;
 
-public class EchoCommandHandler : ICommandHandler<EchoCommand>
+public class EchoCommandHandler : CommandHandlerBase, ICommandHandler<EchoCommand>
 {
-    public IReadOnlyCollection<string> Commands => new[] { "echo" };
-    public string ServiceName => "http";
+    public override IReadOnlyCollection<string> Commands => new[] { "echo" };
+    public override string ServiceName => "http";
 
     public EchoCommand Create(JsonElement payload)
     {
@@ -17,6 +17,8 @@ public class EchoCommandHandler : ICommandHandler<EchoCommand>
         return new EchoCommand(request);
     }
 
-    public void OnLoaded(IServiceProvider services) { }
+    public override ICommand Create(JsonElement payload) => Create(payload);
+
+    public override void OnLoaded(IServiceProvider services) { }
 }
 
