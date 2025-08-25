@@ -63,6 +63,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CcmExecHandler.Tests", "tests/CcmExecHandler.Tests/CcmExecHandler.Tests.csproj", "{928FF438-504D-481F-897B-CB89160B12C8}"
 EndProject
 
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntuneManagementExtensionHandler", "plugins/handlers/IntuneManagementExtensionHandler/IntuneManagementExtensionHandler.csproj", "{6F9CD415-7045-47D5-AEF9-B13E592404BC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntuneManagementExtensionHandler.Tests", "tests/IntuneManagementExtensionHandler.Tests/IntuneManagementExtensionHandler.Tests.csproj", "{02B9C9D0-15EB-4F1A-930A-C6D61CA2C273}"
+EndProject
 Global
     GlobalSection(SolutionConfigurationPlatforms) = preSolution
         Debug|Any CPU = Debug|Any CPU
@@ -189,6 +193,14 @@ Global
         {928FF438-504D-481F-897B-CB89160B12C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {928FF438-504D-481F-897B-CB89160B12C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {928FF438-504D-481F-897B-CB89160B12C8}.Release|Any CPU.Build.0 = Release|Any CPU
+        {6F9CD415-7045-47D5-AEF9-B13E592404BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {6F9CD415-7045-47D5-AEF9-B13E592404BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {6F9CD415-7045-47D5-AEF9-B13E592404BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {6F9CD415-7045-47D5-AEF9-B13E592404BC}.Release|Any CPU.Build.0 = Release|Any CPU
+        {02B9C9D0-15EB-4F1A-930A-C6D61CA2C273}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {02B9C9D0-15EB-4F1A-930A-C6D61CA2C273}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {02B9C9D0-15EB-4F1A-930A-C6D61CA2C273}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {02B9C9D0-15EB-4F1A-930A-C6D61CA2C273}.Release|Any CPU.Build.0 = Release|Any CPU
     EndGlobalSection
     GlobalSection(SolutionProperties) = preSolution
         HideSolutionNode = FALSE
