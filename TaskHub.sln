@@ -54,6 +54,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BitLockerServicePlugin", "p
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BitLockerServicePlugin.Tests", "tests/BitLockerServicePlugin.Tests/BitLockerServicePlugin.Tests.csproj", "{0F613CD3-5F28-4EF2-8E5D-DAE3B13087C5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BitLockerHandler", "plugins/handlers/BitLockerHandler/BitLockerHandler.csproj", "{2F3B1D33-BD74-4E01-B1CA-6C39630A1211}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BitLockerHandler.Tests", "tests/BitLockerHandler.Tests/BitLockerHandler.Tests.csproj", "{1B90C6E5-12F3-4E15-82DB-71DCE4AD42E2}"
+EndProject
 Global
     GlobalSection(SolutionConfigurationPlatforms) = preSolution
         Debug|Any CPU = Debug|Any CPU
@@ -164,6 +168,14 @@ Global
         {0F613CD3-5F28-4EF2-8E5D-DAE3B13087C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {0F613CD3-5F28-4EF2-8E5D-DAE3B13087C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {0F613CD3-5F28-4EF2-8E5D-DAE3B13087C5}.Release|Any CPU.Build.0 = Release|Any CPU
+        {2F3B1D33-BD74-4E01-B1CA-6C39630A1211}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {2F3B1D33-BD74-4E01-B1CA-6C39630A1211}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {2F3B1D33-BD74-4E01-B1CA-6C39630A1211}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {2F3B1D33-BD74-4E01-B1CA-6C39630A1211}.Release|Any CPU.Build.0 = Release|Any CPU
+        {1B90C6E5-12F3-4E15-82DB-71DCE4AD42E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {1B90C6E5-12F3-4E15-82DB-71DCE4AD42E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {1B90C6E5-12F3-4E15-82DB-71DCE4AD42E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {1B90C6E5-12F3-4E15-82DB-71DCE4AD42E2}.Release|Any CPU.Build.0 = Release|Any CPU
     EndGlobalSection
     GlobalSection(SolutionProperties) = preSolution
         HideSolutionNode = FALSE
