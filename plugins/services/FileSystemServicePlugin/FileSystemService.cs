@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using TaskHub.Abstractions;
 
@@ -13,8 +15,29 @@ public class FileSystemServicePlugin : IServicePlugin
 
     private class FileSystemService
     {
+        private static readonly HashSet<string> RestrictedPaths = new(StringComparer.OrdinalIgnoreCase)
+        {
+            Path.GetFullPath("/"),
+            Path.GetFullPath("/etc"),
+            Path.GetFullPath("/bin"),
+            Path.GetFullPath("/usr"),
+            Path.GetFullPath("/proc"),
+            Path.GetFullPath("/sys")
+        };
+
+        private static void ValidatePath(string path)
+        {
+            var full = Path.GetFullPath(path);
+            if (RestrictedPaths.Any(r => full.Equals(r, StringComparison.OrdinalIgnoreCase) ||
+                                         full.StartsWith(r + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException($"Access to path '{path}' is not allowed.");
+            }
+        }
+
         public OperationResult Read(string path)
         {
+            ValidatePath(path);
             try
             {
                 var content = File.ReadAllText(path);
@@ -29,6 +52,7 @@ public class FileSystemServicePlugin : IServicePlugin
 
         public OperationResult Write(string path, string content)
         {
+            ValidatePath(path);
             try
             {
                 File.WriteAllText(path, content);
@@ -43,6 +67,7 @@ public class FileSystemServicePlugin : IServicePlugin
 
         public OperationResult Delete(string path)
         {
+            ValidatePath(path);
             try
             {
                 if (File.Exists(path))
