@@ -67,6 +67,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntuneManagementExtensionHa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntuneManagementExtensionHandler.Tests", "tests/IntuneManagementExtensionHandler.Tests/IntuneManagementExtensionHandler.Tests.csproj", "{02B9C9D0-15EB-4F1A-930A-C6D61CA2C273}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonitorServicePlugin", "plugins/services/MonitorServicePlugin/MonitorServicePlugin.csproj", "{A9E5DBB2-7CCB-4984-890F-EF462A46AF09}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonitorHandler", "plugins/handlers/MonitorHandler/MonitorHandler.csproj", "{6C0F4FB0-A714-42C2-84E9-F555F10CBBF5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonitorHandler.Tests", "tests/MonitorHandler.Tests/MonitorHandler.Tests.csproj", "{E80A5E92-76BC-4259-8B04-F4E7C8FDBB5B}"
+EndProject
 Global
     GlobalSection(SolutionConfigurationPlatforms) = preSolution
         Debug|Any CPU = Debug|Any CPU
@@ -201,6 +207,18 @@ Global
         {02B9C9D0-15EB-4F1A-930A-C6D61CA2C273}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {02B9C9D0-15EB-4F1A-930A-C6D61CA2C273}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {02B9C9D0-15EB-4F1A-930A-C6D61CA2C273}.Release|Any CPU.Build.0 = Release|Any CPU
+        {A9E5DBB2-7CCB-4984-890F-EF462A46AF09}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {A9E5DBB2-7CCB-4984-890F-EF462A46AF09}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {A9E5DBB2-7CCB-4984-890F-EF462A46AF09}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {A9E5DBB2-7CCB-4984-890F-EF462A46AF09}.Release|Any CPU.Build.0 = Release|Any CPU
+        {6C0F4FB0-A714-42C2-84E9-F555F10CBBF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {6C0F4FB0-A714-42C2-84E9-F555F10CBBF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {6C0F4FB0-A714-42C2-84E9-F555F10CBBF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {6C0F4FB0-A714-42C2-84E9-F555F10CBBF5}.Release|Any CPU.Build.0 = Release|Any CPU
+        {E80A5E92-76BC-4259-8B04-F4E7C8FDBB5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {E80A5E92-76BC-4259-8B04-F4E7C8FDBB5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {E80A5E92-76BC-4259-8B04-F4E7C8FDBB5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {E80A5E92-76BC-4259-8B04-F4E7C8FDBB5B}.Release|Any CPU.Build.0 = Release|Any CPU
     EndGlobalSection
     GlobalSection(SolutionProperties) = preSolution
         HideSolutionNode = FALSE
