@@ -60,6 +60,26 @@ public class RegistryServicePlugin : IServicePlugin
             }
         }
 
+        public OperationResult Delete(string keyPath, string property)
+        {
+            try
+            {
+                var (hive, subKey) = SplitHive(keyPath);
+                using var key = hive.OpenSubKey(subKey, writable: true);
+                if (key == null)
+                {
+                    return new OperationResult(null, $"Registry key '{keyPath}' not found");
+                }
+
+                key.DeleteValue(property, false);
+                return new OperationResult(null, "success");
+            }
+            catch (Exception ex)
+            {
+                return new OperationResult(null, $"Failed to delete '{property}' from '{keyPath}': {ex.Message}");
+            }
+        }
+
         private static (RegistryKey hive, string subKey) SplitHive(string keyPath)
         {
             var parts = keyPath.Split(new[] {'\\'}, 2);

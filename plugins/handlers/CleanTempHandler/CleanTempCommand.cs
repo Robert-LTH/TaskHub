@@ -18,8 +18,8 @@ public class CleanTempCommand : ICommand
 
     public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken, ClientWebSocket? socket = null)
     {
-        var cleaner = (Action<string>)service.GetService();
-        cleaner(Request.Path);
+        dynamic fs = service.GetService();
+        fs.Delete(Request.Path);
         var element = JsonSerializer.SerializeToElement(Request.Path);
         return Task.FromResult(new OperationResult(element, "success"));
     }
