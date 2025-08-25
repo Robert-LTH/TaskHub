@@ -50,6 +50,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerShellServicePlugin", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerShellServicePlugin.Tests", "tests/PowerShellServicePlugin.Tests/PowerShellServicePlugin.Tests.csproj", "{3E80944E-F7E3-49B4-92B8-EBE4DD7496FF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BitLockerServicePlugin", "plugins/services/BitLockerServicePlugin/BitLockerServicePlugin.csproj", "{B3E8A1C2-0D5E-4C11-92F4-99F7A7EAD4A1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BitLockerServicePlugin.Tests", "tests/BitLockerServicePlugin.Tests/BitLockerServicePlugin.Tests.csproj", "{0F613CD3-5F28-4EF2-8E5D-DAE3B13087C5}"
+EndProject
 Global
     GlobalSection(SolutionConfigurationPlatforms) = preSolution
         Debug|Any CPU = Debug|Any CPU
@@ -152,6 +156,14 @@ Global
         {141CEA8D-5CC4-4D0A-B4AC-A05BF6AD9637}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {141CEA8D-5CC4-4D0A-B4AC-A05BF6AD9637}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {141CEA8D-5CC4-4D0A-B4AC-A05BF6AD9637}.Release|Any CPU.Build.0 = Release|Any CPU
+        {B3E8A1C2-0D5E-4C11-92F4-99F7A7EAD4A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {B3E8A1C2-0D5E-4C11-92F4-99F7A7EAD4A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {B3E8A1C2-0D5E-4C11-92F4-99F7A7EAD4A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {B3E8A1C2-0D5E-4C11-92F4-99F7A7EAD4A1}.Release|Any CPU.Build.0 = Release|Any CPU
+        {0F613CD3-5F28-4EF2-8E5D-DAE3B13087C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {0F613CD3-5F28-4EF2-8E5D-DAE3B13087C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {0F613CD3-5F28-4EF2-8E5D-DAE3B13087C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {0F613CD3-5F28-4EF2-8E5D-DAE3B13087C5}.Release|Any CPU.Build.0 = Release|Any CPU
     EndGlobalSection
     GlobalSection(SolutionProperties) = preSolution
         HideSolutionNode = FALSE
