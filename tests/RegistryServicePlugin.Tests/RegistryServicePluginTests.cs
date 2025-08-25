@@ -31,4 +31,13 @@ public class RegistryServicePluginTests
         Assert.Null(result.Payload);
         Assert.Contains("Failed to write", result.Result);
     }
+
+    [Fact]
+    public void DeleteMissingKeyReturnsError()
+    {
+        dynamic service = new RegistryServicePlugin().GetService();
+        OperationResult result = service.Delete("HKEY_CURRENT_USER\\Software\\TaskHub_Missing", "Value");
+        Assert.Null(result.Payload);
+        Assert.Contains("Failed to delete", result.Result);
+    }
 }
