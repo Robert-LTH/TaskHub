@@ -46,12 +46,24 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigurationManagerService
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigurationManagerAdminServicePlugin.Tests", "tests/ConfigurationManagerAdminServicePlugin.Tests/ConfigurationManagerAdminServicePlugin.Tests.csproj", "{141CEA8D-5CC4-4D0A-B4AC-A05BF6AD9637}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerShellServicePlugin", "plugins/services/PowerShellServicePlugin/PowerShellServicePlugin.csproj", "{16EBB5CC-B994-4D4A-8739-3E9A7F23E4F0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerShellServicePlugin.Tests", "tests/PowerShellServicePlugin.Tests/PowerShellServicePlugin.Tests.csproj", "{3E80944E-F7E3-49B4-92B8-EBE4DD7496FF}"
+EndProject
 Global
     GlobalSection(SolutionConfigurationPlatforms) = preSolution
         Debug|Any CPU = Debug|Any CPU
         Release|Any CPU = Release|Any CPU
     EndGlobalSection
     GlobalSection(ProjectConfigurationPlatforms) = postSolution
+        {16EBB5CC-B994-4D4A-8739-3E9A7F23E4F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {16EBB5CC-B994-4D4A-8739-3E9A7F23E4F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {16EBB5CC-B994-4D4A-8739-3E9A7F23E4F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {16EBB5CC-B994-4D4A-8739-3E9A7F23E4F0}.Release|Any CPU.Build.0 = Release|Any CPU
+        {3E80944E-F7E3-49B4-92B8-EBE4DD7496FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {3E80944E-F7E3-49B4-92B8-EBE4DD7496FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {3E80944E-F7E3-49B4-92B8-EBE4DD7496FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {3E80944E-F7E3-49B4-92B8-EBE4DD7496FF}.Release|Any CPU.Build.0 = Release|Any CPU
         {66A1BBE9-8CEA-4EF6-A168-94DF8EA8CFDF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
         {66A1BBE9-8CEA-4EF6-A168-94DF8EA8CFDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {66A1BBE9-8CEA-4EF6-A168-94DF8EA8CFDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
