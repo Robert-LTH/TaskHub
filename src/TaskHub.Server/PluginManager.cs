@@ -15,8 +15,8 @@ public class PluginManager
     // Store concrete implementation types rather than interface instances so the
     // dependency injection container can create fresh objects with their
     // dependencies satisfied on each request.
-    private readonly Dictionary<string, (Type HandlerType, PluginLoadContext Context, string AssemblyPath)> _handlers = new();
-    private readonly Dictionary<string, (Type ServiceType, PluginLoadContext Context, string AssemblyPath)> _services = new();
+    private readonly Dictionary<string, (Type HandlerType, PluginLoadContext Context, string AssemblyPath, Version? Version)> _handlers = new();
+    private readonly Dictionary<string, (Type ServiceType, PluginLoadContext Context, string AssemblyPath, Version? Version)> _services = new();
     private readonly List<string> _assemblies = new();
     private readonly IServiceProvider _provider;
     private readonly ILogger<PluginManager> _logger;
@@ -39,7 +39,8 @@ public class PluginManager
                 if (!config.GetSection($"PluginSettings:{name}").Exists()) continue;
                 try
                 {
-                    var dll = Directory.GetFiles(dir, "*.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
+                    var pluginDir = GetLatestVersionDirectory(dir);
+                    var dll = Directory.GetFiles(pluginDir, "*.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
                     if (dll == null) continue;
                     var context = new PluginLoadContext(dll);
                     var asm = context.LoadFromAssemblyPath(dll);
@@ -47,7 +48,8 @@ public class PluginManager
                     if (type != null)
                     {
                         var plugin = (IServicePlugin)ActivatorUtilities.CreateInstance(_provider, type)!;
-                        _services[plugin.Name] = (type, context, dll);
+                        var version = GetDirectoryVersion(pluginDir);
+                        _services[plugin.Name] = (type, context, dll, version);
                         _assemblies.Add(dll);
                     }
                 }
@@ -67,7 +69,8 @@ public class PluginManager
                 if (!config.GetSection($"PluginSettings:{name}").Exists()) continue;
                 try
                 {
-                    var dll = Directory.GetFiles(dir, "*.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
+                    var pluginDir = GetLatestVersionDirectory(dir);
+                    var dll = Directory.GetFiles(pluginDir, "*.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
                     if (dll == null) continue;
                     var context = new PluginLoadContext(dll);
                     var asm = context.LoadFromAssemblyPath(dll);
@@ -75,9 +78,10 @@ public class PluginManager
                     if (type == null) continue;
                     var handler = (ICommandHandler)ActivatorUtilities.CreateInstance(_provider, type)!;
                     handler.OnLoaded(_provider);
+                    var version = GetDirectoryVersion(pluginDir);
                     foreach (var command in handler.Commands)
                     {
-                        _handlers[command] = (type, context, dll);
+                        _handlers[command] = (type, context, dll, version);
                     }
                     _assemblies.Add(dll);
                 }
@@ -89,7 +93,30 @@ public class PluginManager
         }
     }
 
+    private static string GetLatestVersionDirectory(string dir)
+    {
+        var versions = Directory.GetDirectories(dir)
+            .Select(d => new { Path = d, Name = Path.GetFileName(d) })
+            .Where(d => Version.TryParse(d.Name, out _))
+            .Select(d => (Path: d.Path, Version: Version.Parse(d.Name)))
+            .OrderByDescending(d => d.Version)
+            .FirstOrDefault();
+
+        return versions.Path ?? dir;
+    }
+
+    private static Version? GetDirectoryVersion(string dir)
+    {
+        var name = Path.GetFileName(dir);
+        return Version.TryParse(name, out var version) ? version : null;
+    }
+
     public IEnumerable<string> LoadedAssemblies => _assemblies;
+
+    public string? GetHandlerVersion(string command)
+    {
+        return _handlers.TryGetValue(command, out var value) ? value.Version?.ToString() : null;
+    }
 
     public ICommandHandler? GetHandler(string name)
     {
