@@ -1,19 +1,22 @@
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Channels;
 using Hangfire;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using TaskHub.Abstractions;
 
 namespace TaskHub.Server;
 
-public class WebSocketJobService : BackgroundService
+public class WebSocketJobService : BackgroundService, IResultPublisher
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<WebSocketJobService> _logger;
     private readonly IBackgroundJobClient _client;
     private readonly PayloadVerifier _verifier;
+    private readonly Channel<string> _sendQueue = Channel.CreateUnbounded<string>();
 
     public WebSocketJobService(IConfiguration configuration, ILogger<WebSocketJobService> logger, IBackgroundJobClient client, PayloadVerifier verifier)
     {
@@ -21,6 +24,18 @@ public class WebSocketJobService : BackgroundService
         _logger = logger;
         _client = client;
         _verifier = verifier;
+    }
+
+    public async Task PublishResultAsync(CommandStatusResult result, string? callbackConnectionId, CancellationToken token)
+    {
+        var envelope = new
+        {
+            type = "result",
+            connectionId = callbackConnectionId,
+            result
+        };
+        var json = JsonSerializer.Serialize(envelope);
+        await _sendQueue.Writer.WriteAsync(json, token);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -38,7 +53,9 @@ public class WebSocketJobService : BackgroundService
             try
             {
                 await socket.ConnectAsync(new Uri(url), stoppingToken);
-                await ReceiveLoop(socket, stoppingToken);
+                var receiveTask = ReceiveLoop(socket, stoppingToken);
+                var sendTask = SendLoop(socket, stoppingToken);
+                await Task.WhenAny(receiveTask, sendTask);
             }
             catch (OperationCanceledException)
             {
@@ -82,7 +99,8 @@ public class WebSocketJobService : BackgroundService
                     {
                         if (_verifier.Verify(request.Payload, request.Signature))
                         {
-                            _client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, null!, CancellationToken.None));
+                            var jobId = _client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, null!, CancellationToken.None));
+                            CommandExecutor.SetCallback(jobId, request.CallbackConnectionId);
                         }
                         else
                         {
@@ -94,6 +112,18 @@ public class WebSocketJobService : BackgroundService
                 {
                     _logger.LogError(ex, "Failed to process job message {Message}", message);
                 }
+            }
+        }
+    }
+
+    private async Task SendLoop(ClientWebSocket socket, CancellationToken token)
+    {
+        while (await _sendQueue.Reader.WaitToReadAsync(token) && socket.State == WebSocketState.Open)
+        {
+            while (_sendQueue.Reader.TryRead(out var message))
+            {
+                var bytes = Encoding.UTF8.GetBytes(message);
+                await socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, token);
             }
         }
     }

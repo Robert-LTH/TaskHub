@@ -2,4 +2,4 @@ using System.Text.Json;
 
 namespace TaskHub.Server;
 
-public record CommandChainRequest(string[] Commands, JsonElement Payload, string? Signature = null);
+public record CommandChainRequest(string[] Commands, JsonElement Payload, string? Signature = null, string? CallbackConnectionId = null);
