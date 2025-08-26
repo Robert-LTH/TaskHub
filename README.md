@@ -66,6 +66,8 @@ The server exposes a minimal API:
 An OpenAPI/Swagger UI powered by NSwag is available at `/swagger`.
 
 Plugins must be compiled and copied under the `plugins` directory as described in the project.
+If multiple versions of a plugin exist in version-named subdirectories, the server loads the highest available version.
+Executed-command history includes the version of the plugin that handled each command.
 The `TaskHub.Abstractions` project contains shared interfaces and result types and can be packaged as a NuGet
 dependency for plugin development.
 

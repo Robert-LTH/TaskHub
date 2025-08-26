@@ -35,21 +35,24 @@ public class CommandExecutor
         return _history.TryRemove(jobId, out var list) ? list : null;
     }
 
-    private async Task<OperationResult> ExecuteInternal(string command, JsonElement payload, CancellationToken token)
+    private async Task<(OperationResult Result, string? Version)> ExecuteInternal(string command, JsonElement payload, CancellationToken token)
     {
         var handler = _manager.GetHandler(command);
         if (handler == null)
         {
-            return new OperationResult(null, $"Handler {command} not found.");
+            return (new OperationResult(null, $"Handler {command} not found."), null);
         }
 
         var service = _manager.GetService(handler.ServiceName);
-        return await handler.ExecuteAsync(payload, service, token);
+        var result = await handler.ExecuteAsync(payload, service, token);
+        var version = _manager.GetHandlerVersion(command);
+        return (result, version);
     }
 
     public async Task<OperationResult> Execute(string command, JsonElement payload, CancellationToken token)
     {
-        return await ExecuteInternal(command, payload, token);
+        var (result, _) = await ExecuteInternal(command, payload, token);
+        return result;
     }
 
     public async Task<OperationResult> ExecuteChain(IEnumerable<string> commands, JsonElement payload, PerformContext context, CancellationToken token)
@@ -60,10 +63,11 @@ public class CommandExecutor
         foreach (var command in commands)
         {
             var ranAt = DateTimeOffset.UtcNow;
-            lastResult = await ExecuteInternal(command, current, token);
-            var output = lastResult.Payload ?? NullElement;
-            results.Add(new ExecutedCommandResult(command, ranAt, output));
+            var (result, version) = await ExecuteInternal(command, current, token);
+            var output = result.Payload ?? NullElement;
+            results.Add(new ExecutedCommandResult(command, ranAt, output, version));
             current = output;
+            lastResult = result;
         }
 
         _history[context.BackgroundJob.Id] = results;
