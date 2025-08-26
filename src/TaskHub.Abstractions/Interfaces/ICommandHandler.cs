@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Net.WebSockets;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,7 +16,6 @@ public interface ICommandHandler
     Task<OperationResult> ExecuteAsync(
         JsonElement payload,
         IServicePlugin service,
-        ClientWebSocket? socket,
         CancellationToken cancellationToken);
 }
 

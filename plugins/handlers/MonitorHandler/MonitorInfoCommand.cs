@@ -1,4 +1,3 @@
-using System.Net.WebSockets;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,7 +15,7 @@ public class MonitorInfoCommand : ICommand
 
     public MonitorInfoRequest Request { get; }
 
-    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken, ClientWebSocket? socket = null)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var monitorService = (MonitorService)service.GetService();
         var monitors = monitorService.GetMonitors();

@@ -2,7 +2,6 @@ using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Net.WebSockets;
 using TaskHub.Abstractions;
 
 namespace CleanTempHandler;
@@ -16,7 +15,7 @@ public class CleanTempCommand : ICommand
 
     public CleanTempRequest Request { get; }
 
-    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken, ClientWebSocket? socket = null)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         dynamic fs = service.GetService();
         fs.Delete(Request.Path);

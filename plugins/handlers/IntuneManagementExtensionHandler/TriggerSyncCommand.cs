@@ -1,6 +1,5 @@
 using System;
 using System.Text;
-using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using TaskHub.Abstractions;
@@ -16,7 +15,7 @@ public class TriggerSyncCommand : ICommand
 
     public SyncRequest Request { get; }
 
-    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken, ClientWebSocket? socket = null)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         const string script = @"
 $svc = Get-Service -Name 'IntuneManagementExtension' -ErrorAction SilentlyContinue

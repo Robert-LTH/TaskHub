@@ -110,5 +110,42 @@ public class PluginManager
 
         throw new InvalidOperationException($"Service plugin {name} not loaded");
     }
+
+    public void Unload(string assemblyPath)
+    {
+        var contexts = new List<PluginLoadContext>();
+
+        foreach (var kv in _handlers.Where(kv => kv.Value.AssemblyPath == assemblyPath).ToList())
+        {
+            contexts.Add(kv.Value.Context);
+            _handlers.Remove(kv.Key);
+        }
+
+        foreach (var kv in _services.Where(kv => kv.Value.AssemblyPath == assemblyPath).ToList())
+        {
+            contexts.Add(kv.Value.Context);
+            _services.Remove(kv.Key);
+        }
+
+        _assemblies.RemoveAll(a => a == assemblyPath);
+
+        foreach (var ctx in contexts.Distinct())
+        {
+            ctx.Unload();
+        }
+    }
+
+    public void UnloadAll()
+    {
+        foreach (var ctx in _handlers.Values.Select(v => v.Context)
+            .Concat(_services.Values.Select(v => v.Context)).Distinct())
+        {
+            ctx.Unload();
+        }
+
+        _handlers.Clear();
+        _services.Clear();
+        _assemblies.Clear();
+    }
 }
 

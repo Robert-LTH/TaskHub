@@ -82,7 +82,7 @@ public class WebSocketJobService : BackgroundService
                     {
                         if (_verifier.Verify(request.Payload, request.Signature))
                         {
-                            _client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, null!, CancellationToken.None, socket));
+                            _client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, null!, CancellationToken.None));
                         }
                         else
                         {

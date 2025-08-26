@@ -1,6 +1,5 @@
 using System;
 using System.Management;
-using System.Net.WebSockets;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,7 +16,7 @@ public class RotateKeyCommand : ICommand
 
     public RotateKeyRequest Request { get; }
 
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken, ClientWebSocket? socket = null)
+    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         // Ensure service is initialized
         _ = service.GetService();

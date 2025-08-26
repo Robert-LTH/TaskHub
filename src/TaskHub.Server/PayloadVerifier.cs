@@ -7,7 +7,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace TaskHub.Server;
 
-public class PayloadVerifier
+public class PayloadVerifier : IDisposable
 {
     private readonly X509Certificate2? _certificate;
 
@@ -44,6 +44,11 @@ public class PayloadVerifier
 
         using var rsa = _certificate.GetRSAPublicKey();
         return rsa != null && rsa.VerifyData(data, sig, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+    }
+
+    public void Dispose()
+    {
+        _certificate?.Dispose();
     }
 }
 
