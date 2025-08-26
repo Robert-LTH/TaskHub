@@ -2,6 +2,7 @@ using Hangfire;
 using Hangfire.MemoryStorage;
 using Hangfire.Dashboard;
 using Microsoft.Extensions.Configuration;
+using TaskHub.Abstractions;
 using TaskHub.Server;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,7 +22,9 @@ builder.Services.AddOpenApiDocument();
 var jobHandlingMode = builder.Configuration.GetValue<string>("JobHandling:Mode");
 if (string.Equals(jobHandlingMode, "WebSocket", StringComparison.OrdinalIgnoreCase))
 {
-    builder.Services.AddHostedService<WebSocketJobService>();
+    builder.Services.AddSingleton<WebSocketJobService>();
+    builder.Services.AddSingleton<IResultPublisher>(sp => sp.GetRequiredService<WebSocketJobService>());
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<WebSocketJobService>());
 }
 
 var app = builder.Build();

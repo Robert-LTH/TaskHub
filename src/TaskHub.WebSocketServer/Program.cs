@@ -45,10 +45,36 @@ app.Map("/ws", async context =>
     }
 
     var buffer = new byte[1024 * 4];
+    var sb = new StringBuilder();
     var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
     while (!result.CloseStatus.HasValue)
     {
-        await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None);
+        sb.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
+        if (result.EndOfMessage)
+        {
+            var message = sb.ToString();
+            sb.Clear();
+            try
+            {
+                var doc = JsonDocument.Parse(message);
+                if (doc.RootElement.TryGetProperty("type", out var typeEl) && typeEl.GetString() == "result")
+                {
+                    if (doc.RootElement.TryGetProperty("connectionId", out var connEl))
+                    {
+                        var targetId = connEl.GetString();
+                        if (!string.IsNullOrEmpty(targetId) && connections.TryGetValue(targetId, out var target) && target.Socket.State == WebSocketState.Open)
+                        {
+                            var bytes = Encoding.UTF8.GetBytes(message);
+                            await target.Socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // ignore malformed messages
+            }
+        }
         result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
     }
 

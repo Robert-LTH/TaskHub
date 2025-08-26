@@ -19,6 +19,7 @@ public static class CommandEndpoints
                 return Results.Unauthorized();
             }
             var jobId = client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, null!, CancellationToken.None));
+            CommandExecutor.SetCallback(jobId, request.CallbackConnectionId);
             return Results.Ok(new EnqueuedCommandResult(jobId, Array.Empty<ExecutedCommandResult>(), DateTimeOffset.UtcNow));
         }).Produces<EnqueuedCommandResult>();
 
@@ -30,6 +31,7 @@ public static class CommandEndpoints
             }
             var jobId = Guid.NewGuid().ToString();
             client.Schedule(() => RecurringJob.AddOrUpdate<CommandExecutor>(jobId, exec => exec.ExecuteChain(request.Commands, request.Payload, null!, CancellationToken.None), request.CronExpression), request.Delay);
+            CommandExecutor.SetCallback(jobId, request.CallbackConnectionId);
             return Results.Ok(new EnqueuedCommandResult(jobId, Array.Empty<ExecutedCommandResult>(), DateTimeOffset.UtcNow.Add(request.Delay)));
         }).Produces<EnqueuedCommandResult>();
 

@@ -12,16 +12,23 @@ namespace TaskHub.Server;
 public class CommandExecutor
 {
     private readonly PluginManager _manager;
+    private readonly IEnumerable<IResultPublisher> _publishers;
 
     private const int MaxHistoryEntries = 100;
     private static readonly ConcurrentDictionary<string, List<ExecutedCommandResult>> _history = new();
     private static readonly ConcurrentQueue<string> _historyOrder = new();
     private static readonly JsonElement NullElement = JsonDocument.Parse("null").RootElement;
 
-    public CommandExecutor(PluginManager manager)
+    private static readonly ConcurrentDictionary<string, string?> _callbacks = new();
+
+    public CommandExecutor(PluginManager manager, IEnumerable<IResultPublisher> publishers)
     {
         _manager = manager;
+        _publishers = publishers;
     }
+
+    public static void SetCallback(string jobId, string? connectionId) => _callbacks[jobId] = connectionId;
+    private static string? GetCallback(string jobId) => _callbacks.TryRemove(jobId, out var id) ? id : null;
 
     public static IReadOnlyList<ExecutedCommandResult>? GetHistory(string jobId)
     {
@@ -64,6 +71,20 @@ public class CommandExecutor
         while (_historyOrder.Count > MaxHistoryEntries && _historyOrder.TryDequeue(out var oldId))
         {
             _history.TryRemove(oldId, out _);
+        }
+
+        var statusResult = new CommandStatusResult(context.BackgroundJob.Id, lastResult.Result, results.ToArray());
+        var callbackId = GetCallback(context.BackgroundJob.Id);
+        foreach (var publisher in _publishers)
+        {
+            try
+            {
+                await publisher.PublishResultAsync(statusResult, callbackId, token);
+            }
+            catch
+            {
+                // ignore publishing errors to avoid failing the job
+            }
         }
 
         return lastResult;
