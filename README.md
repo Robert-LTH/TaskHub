@@ -89,3 +89,7 @@ If no `test` script is defined, you can run ESLint directly:
 npx eslint .
 ```
 
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
