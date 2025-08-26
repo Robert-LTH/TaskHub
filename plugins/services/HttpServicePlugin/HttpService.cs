@@ -7,9 +7,10 @@ using TaskHub.Abstractions;
 
 namespace HttpServicePlugin;
 
-public class HttpServicePlugin : IServicePlugin
+public class HttpServicePlugin : IServicePlugin, IDisposable
 {
     private readonly IHttpClientFactory _factory;
+    private readonly ServiceProvider _provider;
 
     public HttpServicePlugin(ILogger<HttpServicePlugin> logger)
     {
@@ -21,13 +22,18 @@ public class HttpServicePlugin : IServicePlugin
                 UseDefaultCredentials = true
             })
             .AddHttpMessageHandler<LoggingHandler>();
-        var provider = services.BuildServiceProvider();
-        _factory = provider.GetRequiredService<IHttpClientFactory>();
+        _provider = services.BuildServiceProvider();
+        _factory = _provider.GetRequiredService<IHttpClientFactory>();
     }
 
     public string Name => "http";
 
     public object GetService() => _factory.CreateClient("http");
+
+    public void Dispose()
+    {
+        _provider.Dispose();
+    }
 
     private class LoggingHandler : DelegatingHandler
     {

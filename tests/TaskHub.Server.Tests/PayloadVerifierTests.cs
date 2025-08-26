@@ -26,7 +26,7 @@ public class PayloadVerifierTests
             ["PayloadVerification:CertificatePath"] = path
         }).Build();
 
-        var verifier = new PayloadVerifier(config);
+        using var verifier = new PayloadVerifier(config);
         var payload = JsonDocument.Parse("{\"value\":1}").RootElement;
         var data = JsonSerializer.SerializeToUtf8Bytes(payload);
         var signature = Convert.ToBase64String(rsa.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
@@ -55,7 +55,7 @@ public class PayloadVerifierTests
             ["PayloadVerification:CertificatePath"] = path
         }).Build();
 
-        var verifier = new PayloadVerifier(config);
+        using var verifier = new PayloadVerifier(config);
         var payload = JsonDocument.Parse("{\"value\":1}").RootElement;
         var fakeSig = Convert.ToBase64String(new byte[256]);
 
@@ -67,5 +67,24 @@ public class PayloadVerifierTests
         {
             File.Delete(path);
         }
+    }
+
+    [Fact]
+    public void Dispose_ReleasesCertificate()
+    {
+        using var rsa = RSA.Create(2048);
+        var req = new CertificateRequest("CN=test", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        using var cert = req.CreateSelfSigned(DateTimeOffset.Now.AddDays(-1), DateTimeOffset.Now.AddDays(1));
+        var path = Path.GetTempFileName();
+        File.WriteAllBytes(path, cert.Export(X509ContentType.Cert));
+
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["PayloadVerification:CertificatePath"] = path
+        }).Build();
+
+        var verifier = new PayloadVerifier(config);
+        verifier.Dispose();
+        File.Delete(path);
     }
 }

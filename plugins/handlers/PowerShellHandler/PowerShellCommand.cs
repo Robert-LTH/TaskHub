@@ -1,6 +1,5 @@
 using System;
 using System.Text;
-using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using TaskHub.Abstractions;
@@ -27,6 +26,6 @@ public class PowerShellCommand : ICommand
         return Task.FromResult(result);
     }
 
-    Task<OperationResult> ICommand.ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken, ClientWebSocket? socket)
+    Task<OperationResult> ICommand.ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
         => ExecuteAsync(cancellationToken);
 }

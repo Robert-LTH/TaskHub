@@ -61,6 +61,24 @@ public class PluginManagerTests
         Assert.Throws<InvalidOperationException>(() => manager.GetService("unknown"));
     }
 
+    [Fact]
+    public void Unload_RemovesPlugins()
+    {
+        var manager = CreateManager();
+        var handlersField = typeof(PluginManager).GetField("_handlers", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        var handlers = (Dictionary<string, (Type HandlerType, PluginLoadContext Context, string AssemblyPath)>)handlersField.GetValue(manager)!;
+        var assembliesField = typeof(PluginManager).GetField("_assemblies", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        var assemblies = (List<string>)assembliesField.GetValue(manager)!;
+        var path = typeof(StubHandler).Assembly.Location;
+        handlers["stub"] = (typeof(StubHandler), new PluginLoadContext(path), path);
+        assemblies.Add(path);
+        manager.Unload(path);
+
+        var handler = manager.GetHandler("stub");
+        Assert.Null(handler);
+        Assert.DoesNotContain(path, manager.LoadedAssemblies);
+    }
+
     private class StubServicePlugin : IServicePlugin
     {
         public string Name => "Stub";
@@ -71,8 +89,7 @@ public class PluginManagerTests
     {
         public System.Threading.Tasks.Task<OperationResult> ExecuteAsync(
             IServicePlugin service,
-            System.Threading.CancellationToken cancellationToken,
-            System.Net.WebSockets.ClientWebSocket? socket = null)
+            System.Threading.CancellationToken cancellationToken)
         {
             var element = System.Text.Json.JsonDocument.Parse("{}" ).RootElement;
             return System.Threading.Tasks.Task.FromResult(new OperationResult(element, "success"));

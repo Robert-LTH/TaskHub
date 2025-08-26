@@ -9,7 +9,7 @@ public class HttpServicePluginTests
     [Fact]
     public void NameIsHttp()
     {
-        var plugin = new HttpServicePlugin(NullLogger<HttpServicePlugin>.Instance);
+        using var plugin = new HttpServicePlugin(NullLogger<HttpServicePlugin>.Instance);
         Assert.Equal("http", plugin.Name);
     }
 }
