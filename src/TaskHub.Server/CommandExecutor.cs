@@ -61,30 +61,71 @@ public class CommandExecutor
     public async Task<OperationResult> ExecuteChain(IEnumerable<string> commands, JsonElement payload, string? requestedBy, PerformContext context, CancellationToken token)
     {
         var commandList = commands as string[] ?? commands.ToArray();
-        _logger.LogInformation("Job {JobId} started for user {User} with commands {Commands}", context.BackgroundJob.Id, requestedBy ?? "unknown", string.Join(", ", commandList));
+        var jobId = context?.BackgroundJob?.Id ?? Guid.NewGuid().ToString();
+        _logger.LogInformation("Job {JobId} started for user {User} with commands {Commands}", jobId, requestedBy ?? "unknown", string.Join(", ", commandList));
 
         var current = payload;
         var results = new List<ExecutedCommandResult>();
         OperationResult lastResult = new OperationResult(null, "success");
-        foreach (var command in commandList)
+        var running = new List<Task<(ExecutedCommandResult Record, OperationResult Result)>>();
+
+        async Task DrainAsync()
         {
-            var ranAt = DateTimeOffset.UtcNow;
-            var (result, version) = await ExecuteInternal(command, current, token);
-            var output = result.Payload ?? NullElement;
-            results.Add(new ExecutedCommandResult(command, ranAt, output, version));
-            current = output;
-            lastResult = result;
+            if (running.Count == 0) return;
+            var finished = await Task.WhenAll(running);
+            foreach (var item in finished)
+            {
+                results.Add(item.Record);
+            }
+            var last = finished[^1];
+            lastResult = last.Result;
+            current = last.Record.Output;
+            running.Clear();
         }
 
-        _history[context.BackgroundJob.Id] = results;
-        _historyOrder.Enqueue(context.BackgroundJob.Id);
+        foreach (var command in commandList)
+        {
+            var handler = _manager.GetHandler(command);
+            if (handler == null)
+            {
+                await DrainAsync();
+                var ranAtMissing = DateTimeOffset.UtcNow;
+                var missing = new ExecutedCommandResult(command, ranAtMissing, NullElement, null);
+                results.Add(missing);
+                lastResult = new OperationResult(null, $"Handler {command} not found.");
+                current = NullElement;
+                continue;
+            }
+
+            var service = _manager.GetService(handler.ServiceName);
+            var cmd = handler.Create(current);
+            var version = _manager.GetHandlerVersion(command);
+
+            if (cmd.WaitForPrevious)
+            {
+                await DrainAsync();
+            }
+
+            running.Add(Task.Run(async () =>
+            {
+                var ranAt = DateTimeOffset.UtcNow;
+                var result = await cmd.ExecuteAsync(service, token);
+                var output = result.Payload ?? NullElement;
+                return (new ExecutedCommandResult(command, ranAt, output, version), result);
+            }, token));
+        }
+
+        await DrainAsync();
+
+        _history[jobId] = results;
+        _historyOrder.Enqueue(jobId);
         while (_historyOrder.Count > MaxHistoryEntries && _historyOrder.TryDequeue(out var oldId))
         {
             _history.TryRemove(oldId, out _);
         }
 
-        var statusResult = new CommandStatusResult(context.BackgroundJob.Id, lastResult.Result, results.ToArray());
-        var callbackId = GetCallback(context.BackgroundJob.Id);
+        var statusResult = new CommandStatusResult(jobId, lastResult.Result, results.ToArray());
+        var callbackId = GetCallback(jobId);
         foreach (var publisher in _publishers)
         {
             try
@@ -97,7 +138,7 @@ public class CommandExecutor
             }
         }
 
-        _logger.LogInformation("Job {JobId} finished for user {User} with result {Result}", context.BackgroundJob.Id, requestedBy ?? "unknown", lastResult.Result);
+        _logger.LogInformation("Job {JobId} finished for user {User} with result {Result}", jobId, requestedBy ?? "unknown", lastResult.Result);
 
         return lastResult;
     }
