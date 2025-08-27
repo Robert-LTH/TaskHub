@@ -17,11 +17,11 @@ public class CommandExecutor
     private readonly ILogger<CommandExecutor> _logger;
 
     private const int MaxHistoryEntries = 100;
-    private static readonly ConcurrentDictionary<string, List<ExecutedCommandResult>> _history = new();
-    private static readonly ConcurrentQueue<string> _historyOrder = new();
+    private readonly ConcurrentDictionary<string, List<ExecutedCommandResult>> _history = new();
+    private readonly ConcurrentQueue<string> _historyOrder = new();
     private static readonly JsonElement NullElement = JsonDocument.Parse("null").RootElement;
 
-    private static readonly ConcurrentDictionary<string, string?> _callbacks = new();
+    private readonly ConcurrentDictionary<string, string?> _callbacks = new();
 
     public CommandExecutor(PluginManager manager, IEnumerable<IResultPublisher> publishers, ILogger<CommandExecutor> logger)
     {
@@ -30,10 +30,10 @@ public class CommandExecutor
         _logger = logger;
     }
 
-    public static void SetCallback(string jobId, string? connectionId) => _callbacks[jobId] = connectionId;
-    private static string? GetCallback(string jobId) => _callbacks.TryRemove(jobId, out var id) ? id : null;
+    public void SetCallback(string jobId, string? connectionId) => _callbacks[jobId] = connectionId;
+    private string? GetCallback(string jobId) => _callbacks.TryRemove(jobId, out var id) ? id : null;
 
-    public static IReadOnlyList<ExecutedCommandResult>? GetHistory(string jobId)
+    public IReadOnlyList<ExecutedCommandResult>? GetHistory(string jobId)
     {
         return _history.TryRemove(jobId, out var list) ? list : null;
     }

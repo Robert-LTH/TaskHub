@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -17,10 +18,10 @@ public class PluginManager
     // Store concrete implementation types rather than interface instances so the
     // dependency injection container can create fresh objects with their
     // dependencies satisfied on each request.
-    private readonly Dictionary<string, (Type HandlerType, PluginLoadContext Context, string AssemblyPath, Version? Version)> _handlers = new();
-    private readonly Dictionary<string, (Type ServiceType, PluginLoadContext Context, string AssemblyPath, Version? Version)> _services = new();
-    private readonly Dictionary<string, CommandInfo> _commandInfos = new();
-    private readonly List<string> _assemblies = new();
+    private readonly ConcurrentDictionary<string, (Type HandlerType, PluginLoadContext Context, string AssemblyPath, Version? Version)> _handlers = new();
+    private readonly ConcurrentDictionary<string, (Type ServiceType, PluginLoadContext Context, string AssemblyPath, Version? Version)> _services = new();
+    private readonly ConcurrentDictionary<string, CommandInfo> _commandInfos = new();
+    private readonly ConcurrentDictionary<string, byte> _assemblies = new();
     private readonly IServiceProvider _provider;
     private readonly ILogger<PluginManager> _logger;
 
@@ -53,7 +54,7 @@ public class PluginManager
                         var plugin = (IServicePlugin)ActivatorUtilities.CreateInstance(_provider, type)!;
                         var version = GetDirectoryVersion(pluginDir);
                         _services[plugin.Name] = (type, context, dll, version);
-                        _assemblies.Add(dll);
+                        _assemblies[dll] = 0;
                     }
                 }
                 catch (Exception ex)
@@ -88,7 +89,7 @@ public class PluginManager
                         _handlers[command] = (type, context, dll, version);
                         _commandInfos[command] = new CommandInfo(command, handler.ServiceName, inputs);
                     }
-                    _assemblies.Add(dll);
+                    _assemblies[dll] = 0;
                 }
                 catch (Exception ex)
                 {
@@ -116,7 +117,7 @@ public class PluginManager
         return Version.TryParse(name, out var version) ? version : null;
     }
 
-    public IEnumerable<string> LoadedAssemblies => _assemblies;
+    public IEnumerable<string> LoadedAssemblies => _assemblies.Keys;
 
     public string? GetHandlerVersion(string command)
     {
@@ -173,16 +174,16 @@ public class PluginManager
         foreach (var kv in _handlers.Where(kv => kv.Value.AssemblyPath == assemblyPath).ToList())
         {
             contexts.Add(kv.Value.Context);
-            _handlers.Remove(kv.Key);
+            _handlers.TryRemove(kv.Key, out _);
         }
 
         foreach (var kv in _services.Where(kv => kv.Value.AssemblyPath == assemblyPath).ToList())
         {
             contexts.Add(kv.Value.Context);
-            _services.Remove(kv.Key);
+            _services.TryRemove(kv.Key, out _);
         }
 
-        _assemblies.RemoveAll(a => a == assemblyPath);
+        _assemblies.TryRemove(assemblyPath, out _);
 
         foreach (var ctx in contexts.Distinct())
         {

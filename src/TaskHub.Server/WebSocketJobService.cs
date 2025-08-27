@@ -16,14 +16,17 @@ public class WebSocketJobService : BackgroundService, IResultPublisher
     private readonly ILogger<WebSocketJobService> _logger;
     private readonly IBackgroundJobClient _client;
     private readonly PayloadVerifier _verifier;
-    private readonly Channel<string> _sendQueue = Channel.CreateUnbounded<string>();
+    private readonly CommandExecutor _executor;
+    private readonly Channel<string> _sendQueue = Channel.CreateBounded<string>(
+        new BoundedChannelOptions(100) { FullMode = BoundedChannelFullMode.DropOldest });
 
-    public WebSocketJobService(IConfiguration configuration, ILogger<WebSocketJobService> logger, IBackgroundJobClient client, PayloadVerifier verifier)
+    public WebSocketJobService(IConfiguration configuration, ILogger<WebSocketJobService> logger, IBackgroundJobClient client, PayloadVerifier verifier, CommandExecutor executor)
     {
         _configuration = configuration;
         _logger = logger;
         _client = client;
         _verifier = verifier;
+        _executor = executor;
     }
 
     public async Task PublishResultAsync(CommandStatusResult result, string? callbackConnectionId, CancellationToken token)
@@ -109,7 +112,7 @@ public class WebSocketJobService : BackgroundService, IResultPublisher
                             {
                                 jobId = _client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, requestedBy, null!, CancellationToken.None));
                             }
-                            CommandExecutor.SetCallback(jobId, request.CallbackConnectionId);
+                            _executor.SetCallback(jobId, request.CallbackConnectionId);
                             _logger.LogInformation("WebSocket user {User} scheduled job {JobId} for commands {Commands}", requestedBy ?? "unknown", jobId, request.Commands);
                         }
                         else
