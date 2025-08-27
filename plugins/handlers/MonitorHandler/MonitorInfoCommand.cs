@@ -8,9 +8,12 @@ namespace MonitorHandler;
 
 public class MonitorInfoCommand : ICommand
 {
-    public MonitorInfoCommand(MonitorInfoRequest request)
+    private readonly IReportingContainer? _container;
+
+    public MonitorInfoCommand(MonitorInfoRequest request, IReportingContainer? container)
     {
         Request = request;
+        _container = container;
     }
 
     public MonitorInfoRequest Request { get; }
@@ -20,6 +23,7 @@ public class MonitorInfoCommand : ICommand
         var monitorService = (MonitorService)service.GetService();
         var monitors = monitorService.GetMonitors();
         var element = JsonSerializer.SerializeToElement(monitors);
+        _container?.AddReport("monitor", element);
         return Task.FromResult(new OperationResult(element, "success"));
     }
 }

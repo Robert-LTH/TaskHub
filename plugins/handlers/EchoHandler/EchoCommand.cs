@@ -9,9 +9,12 @@ namespace EchoHandler;
 
 public class EchoCommand : ICommand
 {
-    public EchoCommand(EchoRequest request)
+    private readonly IReportingContainer? _container;
+
+    public EchoCommand(EchoRequest request, IReportingContainer? container)
     {
         Request = request;
+        _container = container;
     }
 
     public EchoRequest Request { get; }
@@ -21,7 +24,9 @@ public class EchoCommand : ICommand
         var client = (HttpClient)service.GetService();
         var result = await client.GetStringAsync(Request.Resource, cancellationToken);
         Console.WriteLine($"Echo: {result}");
-        return new OperationResult(JsonSerializer.SerializeToElement(result), "success");
+        var element = JsonSerializer.SerializeToElement(result);
+        _container?.AddReport("echo", element);
+        return new OperationResult(element, "success");
     }
 }
 

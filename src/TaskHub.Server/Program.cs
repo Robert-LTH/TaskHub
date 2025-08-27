@@ -18,6 +18,8 @@ builder.Services.AddSingleton<PluginManager>();
 builder.Services.AddSingleton<CommandExecutor>();
 builder.Services.AddSingleton<PayloadVerifier>();
 builder.Services.AddOpenApiDocument();
+builder.Services.AddSingleton<IReportingContainer, ReportingContainer>();
+builder.Services.AddHostedService<ReportingService>();
 
 var jobHandlingMode = builder.Configuration.GetValue<string>("JobHandling:Mode");
 if (string.Equals(jobHandlingMode, "WebSocket", StringComparison.OrdinalIgnoreCase))
