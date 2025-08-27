@@ -99,8 +99,18 @@ public class WebSocketJobService : BackgroundService, IResultPublisher
                     {
                         if (_verifier.Verify(request.Payload, request.Signature))
                         {
-                            var jobId = _client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, null!, CancellationToken.None));
+                            var requestedBy = request.RequestedBy;
+                            string jobId;
+                            if (request.Delay.HasValue)
+                            {
+                                jobId = _client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, requestedBy, null!, CancellationToken.None), request.Delay.Value);
+                            }
+                            else
+                            {
+                                jobId = _client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, requestedBy, null!, CancellationToken.None));
+                            }
                             CommandExecutor.SetCallback(jobId, request.CallbackConnectionId);
+                            _logger.LogInformation("WebSocket user {User} scheduled job {JobId} for commands {Commands}", requestedBy ?? "unknown", jobId, request.Commands);
                         }
                         else
                         {

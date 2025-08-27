@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TaskHub.Abstractions;
 using Hangfire.Server;
+using Microsoft.Extensions.Logging;
 
 namespace TaskHub.Server;
 
@@ -13,6 +14,7 @@ public class CommandExecutor
 {
     private readonly PluginManager _manager;
     private readonly IEnumerable<IResultPublisher> _publishers;
+    private readonly ILogger<CommandExecutor> _logger;
 
     private const int MaxHistoryEntries = 100;
     private static readonly ConcurrentDictionary<string, List<ExecutedCommandResult>> _history = new();
@@ -21,10 +23,11 @@ public class CommandExecutor
 
     private static readonly ConcurrentDictionary<string, string?> _callbacks = new();
 
-    public CommandExecutor(PluginManager manager, IEnumerable<IResultPublisher> publishers)
+    public CommandExecutor(PluginManager manager, IEnumerable<IResultPublisher> publishers, ILogger<CommandExecutor> logger)
     {
         _manager = manager;
         _publishers = publishers;
+        _logger = logger;
     }
 
     public static void SetCallback(string jobId, string? connectionId) => _callbacks[jobId] = connectionId;
@@ -55,12 +58,15 @@ public class CommandExecutor
         return result;
     }
 
-    public async Task<OperationResult> ExecuteChain(IEnumerable<string> commands, JsonElement payload, PerformContext context, CancellationToken token)
+    public async Task<OperationResult> ExecuteChain(IEnumerable<string> commands, JsonElement payload, string? requestedBy, PerformContext context, CancellationToken token)
     {
+        var commandList = commands as string[] ?? commands.ToArray();
+        _logger.LogInformation("Job {JobId} started for user {User} with commands {Commands}", context.BackgroundJob.Id, requestedBy ?? "unknown", string.Join(", ", commandList));
+
         var current = payload;
         var results = new List<ExecutedCommandResult>();
         OperationResult lastResult = new OperationResult(null, "success");
-        foreach (var command in commands)
+        foreach (var command in commandList)
         {
             var ranAt = DateTimeOffset.UtcNow;
             var (result, version) = await ExecuteInternal(command, current, token);
@@ -90,6 +96,8 @@ public class CommandExecutor
                 // ignore publishing errors to avoid failing the job
             }
         }
+
+        _logger.LogInformation("Job {JobId} finished for user {User} with result {Result}", context.BackgroundJob.Id, requestedBy ?? "unknown", lastResult.Result);
 
         return lastResult;
     }
