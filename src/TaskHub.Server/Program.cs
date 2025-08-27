@@ -32,9 +32,11 @@ var app = builder.Build();
 app.UseOpenApi();
 app.UseSwaggerUi3();
 
+var dashboardUser = builder.Configuration["Hangfire:Username"] ?? string.Empty;
+var dashboardPass = builder.Configuration["Hangfire:Password"] ?? string.Empty;
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {
-    Authorization = new[] { new BasicAuthAuthorizationFilter("admin", "password") }
+    Authorization = new[] { new BasicAuthAuthorizationFilter(dashboardUser, dashboardPass) }
 });
 
 var pluginManager = app.Services.GetRequiredService<PluginManager>();
