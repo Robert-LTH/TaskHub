@@ -9,16 +9,20 @@ public class EchoCommandHandler : CommandHandlerBase, ICommandHandler<EchoComman
 {
     public override IReadOnlyCollection<string> Commands => new[] { "echo" };
     public override string ServiceName => "http";
+    private IReportingContainer? _reporting;
 
     public EchoCommand Create(JsonElement payload)
     {
         var request = JsonSerializer.Deserialize<EchoRequest>(payload.GetRawText())
                       ?? new EchoRequest();
-        return new EchoCommand(request);
+        return new EchoCommand(request, _reporting);
     }
 
     public override ICommand Create(JsonElement payload) => Create(payload);
 
-    public override void OnLoaded(IServiceProvider services) { }
+    public override void OnLoaded(IServiceProvider services)
+    {
+        _reporting = services.GetService<IReportingContainer>();
+    }
 }
 

@@ -9,15 +9,19 @@ public class MonitorCommandHandler : CommandHandlerBase, ICommandHandler<Monitor
 {
     public override IReadOnlyCollection<string> Commands => new[] { "monitor-info" };
     public override string ServiceName => "monitor";
+    private IReportingContainer? _reporting;
 
     public MonitorInfoCommand Create(JsonElement payload)
     {
         var request = JsonSerializer.Deserialize<MonitorInfoRequest>(payload.GetRawText()) ?? new MonitorInfoRequest();
-        return new MonitorInfoCommand(request);
+        return new MonitorInfoCommand(request, _reporting);
     }
 
     public override ICommand Create(JsonElement payload) => Create(payload);
 
-    public override void OnLoaded(IServiceProvider services) { }
+    public override void OnLoaded(IServiceProvider services)
+    {
+        _reporting = services.GetService<IReportingContainer>();
+    }
 }
 
