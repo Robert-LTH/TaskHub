@@ -147,6 +147,62 @@ public class ConfigurationManagerServicePlugin : IServicePlugin
                 return new OperationResult(null, $"Failed to get ConfigManagerErrorCode for '{pnpDeviceId}': {ex.Message}");
             }
         }
+
+        public OperationResult AddDeviceToCollection(string host, string wmiNamespace, string collectionId, string[] deviceIds)
+        {
+            try
+            {
+                var scope = GetScope(host, wmiNamespace);
+                var collectionPath = new ManagementPath($"SMS_Collection.CollectionID='{collectionId}'");
+                using var collection = new ManagementObject(scope, collectionPath, null);
+                using var ruleClass = new ManagementClass(scope, new ManagementPath("SMS_CollectionRuleDirect"), null);
+                var rules = new ManagementBaseObject[deviceIds.Length];
+                for (int i = 0; i < deviceIds.Length; i++)
+                {
+                    var rule = ruleClass.CreateInstance();
+                    rule["ResourceClassName"] = "SMS_R_System";
+                    rule["ResourceID"] = int.Parse(deviceIds[i]);
+                    rules[i] = rule;
+                }
+
+                using var inParams = collection.GetMethodParameters("AddMembershipRules");
+                inParams["collectionRules"] = rules;
+                collection.InvokeMethod("AddMembershipRules", inParams, null);
+                return new OperationResult(null, "success");
+            }
+            catch (Exception ex)
+            {
+                return new OperationResult(null, $"Failed to add devices to collection '{collectionId}': {ex.Message}");
+            }
+        }
+
+        public OperationResult AddUserToCollection(string host, string wmiNamespace, string collectionId, string[] userIds)
+        {
+            try
+            {
+                var scope = GetScope(host, wmiNamespace);
+                var collectionPath = new ManagementPath($"SMS_Collection.CollectionID='{collectionId}'");
+                using var collection = new ManagementObject(scope, collectionPath, null);
+                using var ruleClass = new ManagementClass(scope, new ManagementPath("SMS_CollectionRuleDirect"), null);
+                var rules = new ManagementBaseObject[userIds.Length];
+                for (int i = 0; i < userIds.Length; i++)
+                {
+                    var rule = ruleClass.CreateInstance();
+                    rule["ResourceClassName"] = "SMS_R_User";
+                    rule["ResourceID"] = int.Parse(userIds[i]);
+                    rules[i] = rule;
+                }
+
+                using var inParams = collection.GetMethodParameters("AddMembershipRules");
+                inParams["collectionRules"] = rules;
+                collection.InvokeMethod("AddMembershipRules", inParams, null);
+                return new OperationResult(null, "success");
+            }
+            catch (Exception ex)
+            {
+                return new OperationResult(null, $"Failed to add users to collection '{collectionId}': {ex.Message}");
+            }
+        }
     }
 }
 
