@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -17,6 +19,7 @@ public class PluginManager
     // dependencies satisfied on each request.
     private readonly Dictionary<string, (Type HandlerType, PluginLoadContext Context, string AssemblyPath, Version? Version)> _handlers = new();
     private readonly Dictionary<string, (Type ServiceType, PluginLoadContext Context, string AssemblyPath, Version? Version)> _services = new();
+    private readonly Dictionary<string, CommandInfo> _commandInfos = new();
     private readonly List<string> _assemblies = new();
     private readonly IServiceProvider _provider;
     private readonly ILogger<PluginManager> _logger;
@@ -79,9 +82,11 @@ public class PluginManager
                     var handler = (ICommandHandler)ActivatorUtilities.CreateInstance(_provider, type)!;
                     handler.OnLoaded(_provider);
                     var version = GetDirectoryVersion(pluginDir);
+                    var inputs = DescribeInputs(type);
                     foreach (var command in handler.Commands)
                     {
                         _handlers[command] = (type, context, dll, version);
+                        _commandInfos[command] = new CommandInfo(command, handler.ServiceName, inputs);
                     }
                     _assemblies.Add(dll);
                 }
@@ -118,6 +123,8 @@ public class PluginManager
         return _handlers.TryGetValue(command, out var value) ? value.Version?.ToString() : null;
     }
 
+    public IEnumerable<CommandInfo> GetCommandInfos() => _commandInfos.Values;
+
     public ICommandHandler? GetHandler(string name)
     {
         if (_handlers.TryGetValue(name, out var value))
@@ -136,6 +143,27 @@ public class PluginManager
         }
 
         throw new InvalidOperationException($"Service plugin {name} not loaded");
+    }
+
+    private static IReadOnlyList<CommandInput> DescribeInputs(Type handlerType)
+    {
+        var handlerInterface = handlerType.GetInterfaces().FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICommandHandler<>));
+        if (handlerInterface == null) return Array.Empty<CommandInput>();
+
+        var commandType = handlerInterface.GetGenericArguments()[0];
+        var ctor = commandType.GetConstructors().FirstOrDefault();
+        if (ctor == null) return Array.Empty<CommandInput>();
+
+        var paramType = ctor.GetParameters().FirstOrDefault()?.ParameterType;
+        if (paramType == null) return Array.Empty<CommandInput>();
+
+        var inputs = new List<CommandInput>();
+        foreach (var prop in paramType.GetProperties())
+        {
+            var name = prop.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name ?? prop.Name;
+            inputs.Add(new CommandInput(name, prop.PropertyType.Name));
+        }
+        return inputs;
     }
 
     public void Unload(string assemblyPath)

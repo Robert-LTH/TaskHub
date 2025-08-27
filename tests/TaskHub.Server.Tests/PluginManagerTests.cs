@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using HttpPlugin = HttpServicePlugin.HttpServicePlugin;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -150,13 +152,26 @@ public class PluginManagerTests
         public object GetService() => new object();
     }
 
+    private class StubRequest
+    {
+        [JsonPropertyName("value")]
+        public string Value { get; set; } = string.Empty;
+    }
+
     private class StubCommand : ICommand
     {
+        public StubCommand(StubRequest request)
+        {
+            Request = request;
+        }
+
+        public StubRequest Request { get; }
+
         public System.Threading.Tasks.Task<OperationResult> ExecuteAsync(
             IServicePlugin service,
             System.Threading.CancellationToken cancellationToken)
         {
-            var element = System.Text.Json.JsonDocument.Parse("{}" ).RootElement;
+            var element = JsonDocument.Parse("{}" ).RootElement;
             return System.Threading.Tasks.Task.FromResult(new OperationResult(element, "success"));
         }
     }
@@ -165,8 +180,32 @@ public class PluginManagerTests
     {
         public override IReadOnlyCollection<string> Commands => new[] { "stub" };
         public override string ServiceName => "Stub";
-        public StubCommand Create(System.Text.Json.JsonElement payload) => new StubCommand();
-        public override ICommand Create(System.Text.Json.JsonElement payload) => Create(payload);
+        public StubCommand Create(JsonElement payload) =>
+            new StubCommand(JsonSerializer.Deserialize<StubRequest>(payload.GetRawText()) ?? new StubRequest());
+
+        public override ICommand Create(JsonElement payload) => Create(payload);
         public override void OnLoaded(IServiceProvider services) { }
+    }
+
+    [Fact]
+    public void DescribeInputs_ReturnsRequestProperties()
+    {
+        var method = typeof(PluginManager).GetMethod("DescribeInputs", BindingFlags.NonPublic | BindingFlags.Static)!;
+        var inputs = (IReadOnlyList<CommandInput>)method.Invoke(null, new object[] { typeof(StubHandler) })!;
+        var input = Assert.Single(inputs);
+        Assert.Equal("value", input.Name);
+    }
+
+    [Fact]
+    public void GetCommandInfos_ReturnsRegisteredInfo()
+    {
+        var manager = CreateManager();
+        var field = typeof(PluginManager).GetField("_commandInfos", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        var dict = (Dictionary<string, CommandInfo>)field.GetValue(manager)!;
+        dict["stub"] = new CommandInfo("stub", "svc", new[] { new CommandInput("value", "string") });
+
+        var info = Assert.Single(manager.GetCommandInfos());
+        Assert.Equal("stub", info.Name);
+        Assert.Equal("value", info.Inputs[0].Name);
     }
 }
