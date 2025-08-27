@@ -6,6 +6,14 @@ using System.Threading.Tasks;
 
 public interface ICommand
 {
+    /// <summary>
+    /// Indicates whether this command should wait for all previously queued
+    /// commands to complete before it begins execution. Defaults to
+    /// <c>false</c>, allowing the command to run in parallel with earlier
+    /// commands in the chain.
+    /// </summary>
+    bool WaitForPrevious => false;
+
     Task<OperationResult> ExecuteAsync(
         IServicePlugin service,
         CancellationToken cancellationToken);
