@@ -4,6 +4,7 @@ using Hangfire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Logging;
 using TaskHub.Abstractions;
 
 namespace TaskHub.Server;
@@ -12,26 +13,39 @@ public static class CommandEndpoints
 {
     public static IEndpointRouteBuilder MapCommandEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/commands", (CommandChainRequest request, IBackgroundJobClient client, PayloadVerifier verifier) =>
+        app.MapPost("/commands", (CommandChainRequest request, IBackgroundJobClient client, PayloadVerifier verifier, HttpContext context, ILogger<CommandEndpoints> logger) =>
         {
             if (!verifier.Verify(request.Payload, request.Signature))
             {
                 return Results.Unauthorized();
             }
-            var jobId = client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, null!, CancellationToken.None));
+            var requestedBy = context.User.Identity?.Name ?? "anonymous";
+            string jobId;
+            if (request.Delay.HasValue)
+            {
+                jobId = client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, requestedBy, null!, CancellationToken.None), request.Delay.Value);
+            }
+            else
+            {
+                jobId = client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, requestedBy, null!, CancellationToken.None));
+            }
             CommandExecutor.SetCallback(jobId, request.CallbackConnectionId);
-            return Results.Ok(new EnqueuedCommandResult(jobId, Array.Empty<ExecutedCommandResult>(), DateTimeOffset.UtcNow));
+            logger.LogInformation("User {User} scheduled job {JobId} for commands {Commands}", requestedBy, jobId, request.Commands);
+            var enqueueTime = DateTimeOffset.UtcNow + (request.Delay ?? TimeSpan.Zero);
+            return Results.Ok(new EnqueuedCommandResult(jobId, Array.Empty<ExecutedCommandResult>(), enqueueTime));
         }).Produces<EnqueuedCommandResult>();
 
-        app.MapPost("/commands/recurring", (RecurringCommandChainRequest request, IBackgroundJobClient client, PayloadVerifier verifier) =>
+        app.MapPost("/commands/recurring", (RecurringCommandChainRequest request, IBackgroundJobClient client, PayloadVerifier verifier, HttpContext context, ILogger<CommandEndpoints> logger) =>
         {
             if (!verifier.Verify(request.Payload, request.Signature))
             {
                 return Results.Unauthorized();
             }
             var jobId = Guid.NewGuid().ToString();
-            client.Schedule(() => RecurringJob.AddOrUpdate<CommandExecutor>(jobId, exec => exec.ExecuteChain(request.Commands, request.Payload, null!, CancellationToken.None), request.CronExpression), request.Delay);
+            var requestedBy = context.User.Identity?.Name ?? "anonymous";
+            client.Schedule(() => RecurringJob.AddOrUpdate<CommandExecutor>(jobId, exec => exec.ExecuteChain(request.Commands, request.Payload, requestedBy, null!, CancellationToken.None), request.CronExpression), request.Delay);
             CommandExecutor.SetCallback(jobId, request.CallbackConnectionId);
+            logger.LogInformation("User {User} scheduled recurring job {JobId} for commands {Commands}", requestedBy, jobId, request.Commands);
             return Results.Ok(new EnqueuedCommandResult(jobId, Array.Empty<ExecutedCommandResult>(), DateTimeOffset.UtcNow.Add(request.Delay)));
         }).Produces<EnqueuedCommandResult>();
 
