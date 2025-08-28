@@ -40,7 +40,7 @@ if (string.Equals(jobHandlingMode, "WebSocket", StringComparison.OrdinalIgnoreCa
 var app = builder.Build();
 
 app.UseOpenApi();
-app.UseSwaggerUi3();
+app.UseSwaggerUi();
 
 var dashboardUser = builder.Configuration["Hangfire:Username"] ?? string.Empty;
 var dashboardPass = builder.Configuration["Hangfire:Password"] ?? string.Empty;
