@@ -32,7 +32,7 @@ public class BitLockerCommandHandler : CommandHandlerBase, ICommandHandler<Rotat
     {
         var logger = services.GetRequiredService<ILogger<BitLockerService>>();
         var config = services.GetService<IConfiguration>();
-        var url = config?.GetValue<string>("PluginSettings:BitLocker:HubUrl") ?? "http://localhost/bitlocker";
+        var url = config?["PluginSettings:BitLocker:HubUrl"] ?? "http://localhost/bitlocker";
         _connection = new HubConnectionBuilder().WithUrl(url).Build();
         _ = _connection.StartAsync();
 

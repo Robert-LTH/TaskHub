@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
-using Microsoft.Extensions.DependencyInjection;
 using TaskHub.Abstractions;
 
 namespace EchoHandler;
@@ -24,7 +23,7 @@ public class EchoCommandHandler : CommandHandlerBase, ICommandHandler<EchoComman
 
     public override void OnLoaded(IServiceProvider services)
     {
-        _reporting = services.GetService<IReportingContainer>();
+        _reporting = (IReportingContainer?)services.GetService(typeof(IReportingContainer));
     }
 }
 

@@ -81,7 +81,7 @@ public class ConfigurationManagerCommandHandlerTests
         Assert.True(plugin.Service.QueryCalled);
         Assert.Equal(".", plugin.Service.Host);
         Assert.Equal("root\\cimv2", plugin.Service.Namespace);
-        Assert.Equal("SELECT * FROM Win32_ComputerSystem", plugin.Service.Query);
+        Assert.Equal("SELECT * FROM Win32_ComputerSystem", plugin.Service.QueryString);
         Assert.Equal("success", result.Result);
     }
 
@@ -287,7 +287,7 @@ public class ConfigurationManagerCommandHandlerTests
             public bool AddUserCalled;
             public string? Host;
             public string? Namespace;
-            public string? Query;
+            public string? QueryString;
             public string? Path;
             public string? Method;
             public Dictionary<string, object?>? Parameters;
@@ -302,7 +302,7 @@ public class ConfigurationManagerCommandHandlerTests
                 QueryCalled = true;
                 Host = host;
                 Namespace = wmiNamespace;
-                Query = query;
+                QueryString = query;
                 return new OperationResult(null, "success");
             }
 

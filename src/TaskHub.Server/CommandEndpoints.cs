@@ -47,7 +47,13 @@ public static class CommandEndpoints
             }
             var jobId = Guid.NewGuid().ToString();
             var requestedBy = context.User.Identity?.Name ?? "anonymous";
-            client.Schedule(() => RecurringJob.AddOrUpdate<CommandExecutor>(jobId, exec => exec.ExecuteChain(request.Commands, request.Payload, requestedBy, null!, CancellationToken.None), request.CronExpression), request.Delay);
+            client.Schedule(() => RecurringJob.AddOrUpdate<CommandExecutor>(
+                jobId,
+                exec => exec.ExecuteChain(request.Commands, request.Payload, requestedBy, null!, CancellationToken.None),
+                request.CronExpression,
+                null,
+                "default"),
+                request.Delay);
             executor.SetCallback(jobId, request.CallbackConnectionId);
             logger.LogInformation("User {User} scheduled recurring job {JobId} for commands {Commands}", requestedBy, jobId, request.Commands);
             return Results.Ok(new EnqueuedCommandResult(jobId, Array.Empty<ExecutedCommandResult>(), DateTimeOffset.UtcNow.Add(request.Delay)));

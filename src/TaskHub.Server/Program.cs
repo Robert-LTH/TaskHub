@@ -4,12 +4,14 @@ using System.Threading;
 using Hangfire;
 using Hangfire.MemoryStorage;
 using Hangfire.Dashboard;
+using System.Net.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using TaskHub.Abstractions;
 using TaskHub.Server;
+using NSwag.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
