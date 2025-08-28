@@ -67,7 +67,7 @@ public class FileSystemServicePluginTests
         File.WriteAllBytes(tempFile1, new byte[123]);
         File.WriteAllBytes(tempFile2, new byte[456]);
 
-        var config = new ConfigurationBuilder().AddInMemoryCollection(new()
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["PluginSettings:FileSystem:TempPaths:0"] = tempDir1,
             ["PluginSettings:FileSystem:TempPaths:1"] = tempDir2
