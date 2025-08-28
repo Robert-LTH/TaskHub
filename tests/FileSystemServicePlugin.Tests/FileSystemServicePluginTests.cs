@@ -51,4 +51,31 @@ public class FileSystemServicePluginTests
         Assert.Equal("success", result.Result);
         Assert.True(result.Payload?.GetProperty("freeBytes").GetInt64() > 0);
     }
+
+    [Fact]
+    public void GetFreeSpaceIncludesSalvageableTempFiles()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        File.WriteAllBytes(tempFile, new byte[123]);
+
+        dynamic service = new FileSystemServicePlugin().GetService();
+        OperationResult result = service.GetFreeSpace(Path.GetTempPath());
+
+        var salvageable = result.Payload?.GetProperty("salvageable");
+        Assert.NotNull(salvageable);
+
+        bool found = false;
+        foreach (var item in salvageable!.EnumerateArray())
+        {
+            if (item.GetProperty("path").GetString() == tempFile)
+            {
+                found = true;
+                Assert.Equal(123, item.GetProperty("sizeBytes").GetInt64());
+                break;
+            }
+        }
+
+        File.Delete(tempFile);
+        Assert.True(found);
+    }
 }

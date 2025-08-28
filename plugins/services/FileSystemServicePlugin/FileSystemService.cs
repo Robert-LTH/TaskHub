@@ -97,16 +97,72 @@ public class FileSystemServicePlugin : IServicePlugin
             {
                 var root = Path.GetPathRoot(Path.GetFullPath(path)) ?? path;
                 var drive = new DriveInfo(root);
+
+                var tempPath = Path.GetTempPath();
+                var salvageable = new List<object>();
+
+                try
+                {
+                    foreach (var entry in Directory.EnumerateFileSystemEntries(tempPath))
+                    {
+                        long size = 0;
+                        try
+                        {
+                            if (File.Exists(entry))
+                            {
+                                size = new FileInfo(entry).Length;
+                            }
+                            else if (Directory.Exists(entry))
+                            {
+                                size = GetDirectorySize(entry);
+                            }
+                        }
+                        catch
+                        {
+                        }
+
+                        salvageable.Add(new { path = entry, sizeBytes = size });
+                    }
+                }
+                catch
+                {
+                }
+
                 var element = JsonSerializer.SerializeToElement(new
                 {
-                    freeBytes = drive.AvailableFreeSpace
+                    freeBytes = drive.AvailableFreeSpace,
+                    salvageable
                 });
+
                 return new OperationResult(element, "success");
             }
             catch (Exception ex)
             {
                 return new OperationResult(null, $"Failed to get free space for '{path}': {ex.Message}");
             }
+        }
+
+        private static long GetDirectorySize(string path)
+        {
+            long size = 0;
+            try
+            {
+                foreach (var file in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        size += new FileInfo(file).Length;
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return size;
         }
     }
 }
