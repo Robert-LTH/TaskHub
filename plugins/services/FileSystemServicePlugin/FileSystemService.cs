@@ -3,18 +3,34 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using Microsoft.Extensions.Configuration;
 using TaskHub.Abstractions;
 
 namespace FileSystemServicePlugin;
 
 public class FileSystemServicePlugin : IServicePlugin
 {
+    private readonly string[] _tempPaths;
+
+    public FileSystemServicePlugin(IConfiguration? config = null)
+    {
+        _tempPaths = config?.GetSection("PluginSettings:FileSystem:TempPaths").Get<string[]>()
+                     ?? new[] { Path.GetTempPath() };
+    }
+
     public string Name => "filesystem";
 
-    public object GetService() => new FileSystemService();
+    public object GetService() => new FileSystemService(_tempPaths);
 
     private class FileSystemService
     {
+        private readonly string[] _tempPaths;
+
+        public FileSystemService(string[] tempPaths)
+        {
+            _tempPaths = tempPaths;
+        }
+
         private static readonly HashSet<string> RestrictedPaths = new(StringComparer.OrdinalIgnoreCase)
         {
             Path.GetFullPath("/"),
@@ -97,16 +113,73 @@ public class FileSystemServicePlugin : IServicePlugin
             {
                 var root = Path.GetPathRoot(Path.GetFullPath(path)) ?? path;
                 var drive = new DriveInfo(root);
+
+                var salvageable = new List<object>();
+                foreach (var tempPath in _tempPaths)
+                {
+                    try
+                    {
+                        foreach (var entry in Directory.EnumerateFileSystemEntries(tempPath))
+                        {
+                            long size = 0;
+                            try
+                            {
+                                if (File.Exists(entry))
+                                {
+                                    size = new FileInfo(entry).Length;
+                                }
+                                else if (Directory.Exists(entry))
+                                {
+                                    size = GetDirectorySize(entry);
+                                }
+                            }
+                            catch
+                            {
+                            }
+
+                            salvageable.Add(new { path = entry, sizeBytes = size });
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+
                 var element = JsonSerializer.SerializeToElement(new
                 {
-                    freeBytes = drive.AvailableFreeSpace
+                    freeBytes = drive.AvailableFreeSpace,
+                    salvageable
                 });
+
                 return new OperationResult(element, "success");
             }
             catch (Exception ex)
             {
                 return new OperationResult(null, $"Failed to get free space for '{path}': {ex.Message}");
             }
+        }
+
+        private static long GetDirectorySize(string path)
+        {
+            long size = 0;
+            try
+            {
+                foreach (var file in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        size += new FileInfo(file).Length;
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return size;
         }
     }
 }
