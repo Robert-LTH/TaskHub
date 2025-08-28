@@ -18,14 +18,15 @@ public class PowerShellCommandHandler : CommandHandlerBase, ICommandHandler<Powe
     public override IReadOnlyCollection<string> Commands => new[] { "powershell-script" };
     public override string ServiceName => "powershell";
 
-    public PowerShellCommand Create(JsonElement payload)
+    PowerShellCommand ICommandHandler<PowerShellCommand>.Create(JsonElement payload)
     {
         var request = JsonSerializer.Deserialize<PowerShellScriptRequest>(payload.GetRawText())
                       ?? new PowerShellScriptRequest();
         return new PowerShellCommand(_service, request);
     }
 
-    public override ICommand Create(JsonElement payload) => Create(payload);
+    public override ICommand Create(JsonElement payload) =>
+        ((ICommandHandler<PowerShellCommand>)this).Create(payload);
 
     public override void OnLoaded(IServiceProvider services) { }
 }

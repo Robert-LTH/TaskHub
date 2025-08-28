@@ -11,13 +11,14 @@ public class DiskSpaceCommandHandler : CommandHandlerBase, ICommandHandler<DiskS
     public override string ServiceName => "filesystem";
     private IReportingContainer? _reporting;
 
-    public DiskSpaceCommand Create(JsonElement payload)
+    DiskSpaceCommand ICommandHandler<DiskSpaceCommand>.Create(JsonElement payload)
     {
         var request = JsonSerializer.Deserialize<DiskSpaceRequest>(payload.GetRawText()) ?? new DiskSpaceRequest();
         return new DiskSpaceCommand(request, _reporting);
     }
 
-    public override ICommand Create(JsonElement payload) => Create(payload);
+    public override ICommand Create(JsonElement payload) =>
+        ((ICommandHandler<DiskSpaceCommand>)this).Create(payload);
 
     public override void OnLoaded(IServiceProvider services)
     {

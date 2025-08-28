@@ -11,14 +11,15 @@ public class EchoCommandHandler : CommandHandlerBase, ICommandHandler<EchoComman
     public override string ServiceName => "http";
     private IReportingContainer? _reporting;
 
-    public EchoCommand Create(JsonElement payload)
+    EchoCommand ICommandHandler<EchoCommand>.Create(JsonElement payload)
     {
         var request = JsonSerializer.Deserialize<EchoRequest>(payload.GetRawText())
                       ?? new EchoRequest();
         return new EchoCommand(request, _reporting);
     }
 
-    public override ICommand Create(JsonElement payload) => Create(payload);
+    public override ICommand Create(JsonElement payload) =>
+        ((ICommandHandler<EchoCommand>)this).Create(payload);
 
     public override void OnLoaded(IServiceProvider services)
     {

@@ -4,12 +4,12 @@ using System.Text;
 using System.Text.Json;
 using System.Linq;
 
+record ClientConnection(WebSocket Socket, IDictionary<string, string> Criteria);
+
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
 var connections = new ConcurrentDictionary<string, ClientConnection>();
-
-record ClientConnection(WebSocket Socket, IDictionary<string, string> Criteria);
 
 app.UseWebSockets();
 
