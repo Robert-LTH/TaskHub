@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\\..\\..\\src\\TaskHub.Abstractions\\TaskHub.Abstractions.csproj" />
+    <ProjectReference Include="..\\..\\services\\PowerShellServicePlugin\\PowerShellServicePlugin.csproj" />
   </ItemGroup>
   <Target Name="CopyToRoot" AfterTargets="Build">
     <ItemGroup>

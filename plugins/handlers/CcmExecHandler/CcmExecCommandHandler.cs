@@ -10,14 +10,15 @@ public class CcmExecCommandHandler : CommandHandlerBase, ICommandHandler<Trigger
     public override IReadOnlyCollection<string> Commands => new[] { "ccmexwc" };
     public override string ServiceName => "configurationmanager";
 
-    public TriggerScheduleCommand Create(JsonElement payload)
+    TriggerScheduleCommand ICommandHandler<TriggerScheduleCommand>.Create(JsonElement payload)
     {
         var request = JsonSerializer.Deserialize<TriggerScheduleRequest>(payload.GetRawText())
                       ?? new TriggerScheduleRequest();
         return new TriggerScheduleCommand(request);
     }
 
-    public override ICommand Create(JsonElement payload) => Create(payload);
+    public override ICommand Create(JsonElement payload) =>
+        ((ICommandHandler<TriggerScheduleCommand>)this).Create(payload);
 
     public override void OnLoaded(IServiceProvider services) { }
 }

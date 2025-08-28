@@ -77,11 +77,11 @@ public class FileSystemServicePluginTests
         OperationResult result = service.GetFreeSpace(tempDir1);
 
         var salvageable = result.Payload?.GetProperty("salvageable");
-        Assert.NotNull(salvageable);
+        Assert.True(salvageable.HasValue);
 
         bool found1 = false;
         bool found2 = false;
-        foreach (var item in salvageable!.EnumerateArray())
+        foreach (var item in salvageable.Value.EnumerateArray())
         {
             var p = item.GetProperty("path").GetString();
             if (p == tempFile1)

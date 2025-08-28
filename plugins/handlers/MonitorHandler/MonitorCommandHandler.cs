@@ -11,13 +11,14 @@ public class MonitorCommandHandler : CommandHandlerBase, ICommandHandler<Monitor
     public override string ServiceName => "monitor";
     private IReportingContainer? _reporting;
 
-    public MonitorInfoCommand Create(JsonElement payload)
+    MonitorInfoCommand ICommandHandler<MonitorInfoCommand>.Create(JsonElement payload)
     {
         var request = JsonSerializer.Deserialize<MonitorInfoRequest>(payload.GetRawText()) ?? new MonitorInfoRequest();
         return new MonitorInfoCommand(request, _reporting);
     }
 
-    public override ICommand Create(JsonElement payload) => Create(payload);
+    public override ICommand Create(JsonElement payload) =>
+        ((ICommandHandler<MonitorInfoCommand>)this).Create(payload);
 
     public override void OnLoaded(IServiceProvider services)
     {
