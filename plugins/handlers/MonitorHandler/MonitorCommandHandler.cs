@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
-using Microsoft.Extensions.DependencyInjection;
 using TaskHub.Abstractions;
 
 namespace MonitorHandler;
@@ -23,7 +22,7 @@ public class MonitorCommandHandler : CommandHandlerBase, ICommandHandler<Monitor
 
     public override void OnLoaded(IServiceProvider services)
     {
-        _reporting = services.GetService<IReportingContainer>();
+        _reporting = (IReportingContainer?)services.GetService(typeof(IReportingContainer));
     }
 }
 
