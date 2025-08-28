@@ -42,4 +42,13 @@ public class FileSystemServicePluginTests
         Assert.Throws<InvalidOperationException>(() => service.Write("/etc/passwd", "test"));
         Assert.Throws<InvalidOperationException>(() => service.Delete("/etc/passwd"));
     }
+
+    [Fact]
+    public void CanGetFreeSpace()
+    {
+        dynamic service = new FileSystemServicePlugin().GetService();
+        OperationResult result = service.GetFreeSpace(Path.GetTempPath());
+        Assert.Equal("success", result.Result);
+        Assert.True(result.Payload?.GetProperty("freeBytes").GetInt64() > 0);
+    }
 }

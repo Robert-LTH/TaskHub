@@ -90,6 +90,24 @@ public class FileSystemServicePlugin : IServicePlugin
                 return new OperationResult(null, $"Failed to delete '{path}': {ex.Message}");
             }
         }
+
+        public OperationResult GetFreeSpace(string path)
+        {
+            try
+            {
+                var root = Path.GetPathRoot(Path.GetFullPath(path)) ?? path;
+                var drive = new DriveInfo(root);
+                var element = JsonSerializer.SerializeToElement(new
+                {
+                    freeBytes = drive.AvailableFreeSpace
+                });
+                return new OperationResult(element, "success");
+            }
+            catch (Exception ex)
+            {
+                return new OperationResult(null, $"Failed to get free space for '{path}': {ex.Message}");
+            }
+        }
     }
 }
 
