@@ -3,18 +3,34 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using Microsoft.Extensions.Configuration;
 using TaskHub.Abstractions;
 
 namespace FileSystemServicePlugin;
 
 public class FileSystemServicePlugin : IServicePlugin
 {
+    private readonly string[] _tempPaths;
+
+    public FileSystemServicePlugin(IConfiguration? config = null)
+    {
+        _tempPaths = config?.GetSection("PluginSettings:FileSystem:TempPaths").Get<string[]>()
+                     ?? new[] { Path.GetTempPath() };
+    }
+
     public string Name => "filesystem";
 
-    public object GetService() => new FileSystemService();
+    public object GetService() => new FileSystemService(_tempPaths);
 
     private class FileSystemService
     {
+        private readonly string[] _tempPaths;
+
+        public FileSystemService(string[] tempPaths)
+        {
+            _tempPaths = tempPaths;
+        }
+
         private static readonly HashSet<string> RestrictedPaths = new(StringComparer.OrdinalIgnoreCase)
         {
             Path.GetFullPath("/"),
@@ -98,34 +114,35 @@ public class FileSystemServicePlugin : IServicePlugin
                 var root = Path.GetPathRoot(Path.GetFullPath(path)) ?? path;
                 var drive = new DriveInfo(root);
 
-                var tempPath = Path.GetTempPath();
                 var salvageable = new List<object>();
-
-                try
+                foreach (var tempPath in _tempPaths)
                 {
-                    foreach (var entry in Directory.EnumerateFileSystemEntries(tempPath))
+                    try
                     {
-                        long size = 0;
-                        try
+                        foreach (var entry in Directory.EnumerateFileSystemEntries(tempPath))
                         {
-                            if (File.Exists(entry))
+                            long size = 0;
+                            try
                             {
-                                size = new FileInfo(entry).Length;
+                                if (File.Exists(entry))
+                                {
+                                    size = new FileInfo(entry).Length;
+                                }
+                                else if (Directory.Exists(entry))
+                                {
+                                    size = GetDirectorySize(entry);
+                                }
                             }
-                            else if (Directory.Exists(entry))
+                            catch
                             {
-                                size = GetDirectorySize(entry);
                             }
-                        }
-                        catch
-                        {
-                        }
 
-                        salvageable.Add(new { path = entry, sizeBytes = size });
+                            salvageable.Add(new { path = entry, sizeBytes = size });
+                        }
                     }
-                }
-                catch
-                {
+                    catch
+                    {
+                    }
                 }
 
                 var element = JsonSerializer.SerializeToElement(new

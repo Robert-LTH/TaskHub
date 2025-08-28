@@ -1,7 +1,9 @@
 using FileSystemServicePlugin;
 using System;
 using System.IO;
+using System.Collections.Generic;
 using TaskHub.Abstractions;
+using Microsoft.Extensions.Configuration;
 using Xunit;
 
 namespace FileSystemServicePlugin.Tests;
@@ -53,29 +55,53 @@ public class FileSystemServicePluginTests
     }
 
     [Fact]
-    public void GetFreeSpaceIncludesSalvageableTempFiles()
+    public void GetFreeSpaceIncludesSalvageableTempFilesFromConfiguredPaths()
     {
-        var tempFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-        File.WriteAllBytes(tempFile, new byte[123]);
+        var tempDir1 = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        var tempDir2 = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        Directory.CreateDirectory(tempDir1);
+        Directory.CreateDirectory(tempDir2);
 
-        dynamic service = new FileSystemServicePlugin().GetService();
-        OperationResult result = service.GetFreeSpace(Path.GetTempPath());
+        var tempFile1 = Path.Combine(tempDir1, Path.GetRandomFileName());
+        var tempFile2 = Path.Combine(tempDir2, Path.GetRandomFileName());
+        File.WriteAllBytes(tempFile1, new byte[123]);
+        File.WriteAllBytes(tempFile2, new byte[456]);
+
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new()
+        {
+            ["PluginSettings:FileSystem:TempPaths:0"] = tempDir1,
+            ["PluginSettings:FileSystem:TempPaths:1"] = tempDir2
+        }).Build();
+
+        dynamic service = new FileSystemServicePlugin(config).GetService();
+        OperationResult result = service.GetFreeSpace(tempDir1);
 
         var salvageable = result.Payload?.GetProperty("salvageable");
         Assert.NotNull(salvageable);
 
-        bool found = false;
+        bool found1 = false;
+        bool found2 = false;
         foreach (var item in salvageable!.EnumerateArray())
         {
-            if (item.GetProperty("path").GetString() == tempFile)
+            var p = item.GetProperty("path").GetString();
+            if (p == tempFile1)
             {
-                found = true;
+                found1 = true;
                 Assert.Equal(123, item.GetProperty("sizeBytes").GetInt64());
-                break;
+            }
+            else if (p == tempFile2)
+            {
+                found2 = true;
+                Assert.Equal(456, item.GetProperty("sizeBytes").GetInt64());
             }
         }
 
-        File.Delete(tempFile);
-        Assert.True(found);
+        File.Delete(tempFile1);
+        File.Delete(tempFile2);
+        Directory.Delete(tempDir1);
+        Directory.Delete(tempDir2);
+
+        Assert.True(found1);
+        Assert.True(found2);
     }
 }
