@@ -19,13 +19,14 @@ public class BitLockerCommandHandler : CommandHandlerBase, ICommandHandler<Rotat
     public override IReadOnlyCollection<string> Commands => new[] { "bitlocker-rotate" };
     public override string ServiceName => "bitlocker";
 
-    public RotateKeyCommand Create(JsonElement payload)
+    RotateKeyCommand ICommandHandler<RotateKeyCommand>.Create(JsonElement payload)
     {
         var request = JsonSerializer.Deserialize<RotateKeyRequest>(payload.GetRawText()) ?? new RotateKeyRequest();
         return new RotateKeyCommand(request);
     }
 
-    public override ICommand Create(JsonElement payload) => Create(payload);
+    public override ICommand Create(JsonElement payload) =>
+        ((ICommandHandler<RotateKeyCommand>)this).Create(payload);
 
     public override void OnLoaded(IServiceProvider services)
     {

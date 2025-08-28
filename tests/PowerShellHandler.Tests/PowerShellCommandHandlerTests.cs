@@ -27,7 +27,7 @@ public class PowerShellCommandHandlerTests
         var request = new PowerShellScriptRequest { Script = "Write-Output 5" };
         var payload = JsonSerializer.SerializeToElement(request);
 
-        var result = await handler.ExecuteAsync(payload, plugin, null, CancellationToken.None);
+        var result = await handler.ExecuteAsync(payload, plugin, CancellationToken.None);
         Assert.Equal("success", result.Result);
         var element = result.Payload!.Value;
         var first = element.EnumerateArray().First();
