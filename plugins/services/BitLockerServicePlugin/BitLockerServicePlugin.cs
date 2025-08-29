@@ -1,8 +1,10 @@
 using Microsoft.Extensions.Logging;
+using System.Runtime.Versioning;
 using TaskHub.Abstractions;
 
 namespace BitLockerServicePlugin;
 
+[SupportedOSPlatform("windows")]
 public class BitLockerServicePlugin : IServicePlugin
 {
     private readonly BitLockerService _service;

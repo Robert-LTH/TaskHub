@@ -22,9 +22,9 @@ public class CommandExecutorTests
         var manager = new PluginManager(provider);
 
         var handlersField = typeof(PluginManager).GetField("_handlers", BindingFlags.NonPublic | BindingFlags.Instance)!;
-        var handlersDict = (Dictionary<string, (Type HandlerType, PluginLoadContext Context, string AssemblyPath, Version? Version)>)handlersField.GetValue(manager)!;
+        var handlersDict = (System.Collections.Concurrent.ConcurrentDictionary<string, (Type HandlerType, PluginLoadContext Context, string AssemblyPath, Version? Version)>)handlersField.GetValue(manager)!;
         var servicesField = typeof(PluginManager).GetField("_services", BindingFlags.NonPublic | BindingFlags.Instance)!;
-        var servicesDict = (Dictionary<string, (Type ServiceType, PluginLoadContext Context, string AssemblyPath, Version? Version)>)servicesField.GetValue(manager)!;
+        var servicesDict = (System.Collections.Concurrent.ConcurrentDictionary<string, (Type ServiceType, PluginLoadContext Context, string AssemblyPath, Version? Version)>)servicesField.GetValue(manager)!;
         var path = typeof(CommandExecutorTests).Assembly.Location;
         foreach (var pair in handlers)
         {

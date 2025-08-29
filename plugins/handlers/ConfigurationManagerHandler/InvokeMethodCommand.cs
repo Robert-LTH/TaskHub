@@ -17,19 +17,19 @@ public class InvokeMethodCommand : ICommand
 
     public InvokeMethodRequest Request { get; }
 
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         if (_useAdminService)
         {
-            return new OperationResult(null, "InvokeMethod not supported when using admin service");
+            return Task.FromResult(new OperationResult(null, "InvokeMethod not supported when using admin service"));
         }
 
         dynamic wmi = service.GetService();
-        return wmi.InvokeMethod(
+        return Task.FromResult((OperationResult)wmi.InvokeMethod(
             Request.Host ?? ".",
             Request.Namespace ?? "root\\cimv2",
             Request.Path ?? string.Empty,
             Request.Method ?? string.Empty,
-            Request.Parameters ?? new Dictionary<string, object?>());
+            Request.Parameters ?? new Dictionary<string, object?>()));
     }
 }

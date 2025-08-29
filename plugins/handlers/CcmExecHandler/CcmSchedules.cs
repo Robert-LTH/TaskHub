@@ -15,6 +15,15 @@ internal static class CcmSchedules
         ["software-update-scan"] = "{00000000-0000-0000-0000-000000000113}",
     };
 
-    public static bool TryGetScheduleId(string task, out string id) =>
-        ScheduleIds.TryGetValue(task.ToLowerInvariant(), out id);
+    public static bool TryGetScheduleId(string task, out string id)
+    {
+        if (ScheduleIds.TryGetValue(task.ToLowerInvariant(), out var value))
+        {
+            id = value;
+            return true;
+        }
+
+        id = string.Empty;
+        return false;
+    }
 }

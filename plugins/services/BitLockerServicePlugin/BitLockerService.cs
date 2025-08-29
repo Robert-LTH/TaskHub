@@ -1,11 +1,13 @@
 using System;
 using System.Management;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
 namespace BitLockerServicePlugin;
 
+[SupportedOSPlatform("windows")]
 public class BitLockerService
 {
     private readonly ILogger<BitLockerService> _logger;
@@ -41,12 +43,12 @@ public class BitLockerService
                     var volume = (ManagementBaseObject)e.NewEvent["TargetInstance"];
                     var deviceId = (string)volume["DeviceID"];
                     using var vol = new ManagementObject($"Win32_EncryptableVolume.DeviceID='{deviceId}'");
-                    if (vol.InvokeMethod("GetKeyProtectors", new object[] { 0, null }) is ManagementBaseObject ids &&
+                    if (vol.InvokeMethod("GetKeyProtectors", new object?[] { 0, null }) is ManagementBaseObject ids &&
                         ids["VolumeKeyProtectorID"] is string[] protectorIds && protectorIds.Length > 0)
                     {
                         foreach (var id in protectorIds)
                         {
-                            if (vol.InvokeMethod("GetKeyProtectorNumericalPassword", new object[] { id, null }) is ManagementBaseObject pw &&
+                            if (vol.InvokeMethod("GetKeyProtectorNumericalPassword", new object?[] { id, null }) is ManagementBaseObject pw &&
                                 pw["NumericalPassword"] is string key)
                             {
                                 KeyAvailable?.Invoke(deviceId, key);

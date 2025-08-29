@@ -46,13 +46,12 @@ public static class CommandEndpoints
                 return Results.Unauthorized();
             }
             var jobId = Guid.NewGuid().ToString();
-            var requestedBy = context.User.Identity?.Name ?? "anonymous";
+            var requestedBy = context.User.Identity?.Name ?? "anonymous"; 
             client.Schedule(() => RecurringJob.AddOrUpdate<CommandExecutor>(
                 jobId,
                 exec => exec.ExecuteChain(request.Commands, request.Payload, requestedBy, null!, CancellationToken.None),
                 request.CronExpression,
-                null,
-                "default"),
+                new RecurringJobOptions()),
                 request.Delay);
             executor.SetCallback(jobId, request.CallbackConnectionId);
             logger.LogInformation("User {User} scheduled recurring job {JobId} for commands {Commands}", requestedBy, jobId, request.Commands);
