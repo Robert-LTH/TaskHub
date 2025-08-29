@@ -11,7 +11,7 @@ public class RecurringCommandChainRequestTests
     public void PropertiesAreSet()
     {
         var payload = JsonDocument.Parse("{}").RootElement;
-        var request = new RecurringCommandChainRequest(new[] { "echo" }, payload, "* * * * *", TimeSpan.FromMinutes(1), callbackConnectionId: "client1");
+        var request = new RecurringCommandChainRequest(new[] { "echo" }, payload, "* * * * *", TimeSpan.FromMinutes(1), CallbackConnectionId: "client1");
 
         Assert.Equal(new[] { "echo" }, request.Commands);
         Assert.Equal("* * * * *", request.CronExpression);
