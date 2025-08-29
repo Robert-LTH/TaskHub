@@ -41,11 +41,10 @@ public class CommandExecutorTests
         return new CommandExecutor(manager, Array.Empty<IResultPublisher>(), NullLogger<CommandExecutor>.Instance);
     }
 
-    private static readonly string[] commands = new[] { "cmd1", "cmd2" };
-
     [Fact]
     public async Task ExecuteChain_RunsCommandsInParallel()
     {
+        var commands = new[] { "cmd1", "cmd2" };
         var handlers = new Dictionary<string, Type>
         {
             ["cmd1"] = typeof(Cmd1Handler),
@@ -59,11 +58,10 @@ public class CommandExecutorTests
         Assert.True(sw.Elapsed < TimeSpan.FromMilliseconds(350));
     }
 
-    private static readonly string[] commands = new[] { "cmd1", "cmdWait", "cmd2" };
-
     [Fact]
     public async Task ExecuteChain_WaitsWhenRequested()
     {
+        var commands = new[] { "cmd1", "cmdWait", "cmd2" };
         var handlers = new Dictionary<string, Type>
         {
             ["cmd1"] = typeof(Cmd1Handler),
