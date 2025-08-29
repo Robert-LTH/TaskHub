@@ -16,18 +16,18 @@ public class GetErrorCodeCommand : ICommand
 
     public GetErrorCodeRequest Request { get; }
 
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         if (_useAdminService)
         {
-            return new OperationResult(null, "GetErrorCode not supported when using admin service");
+            return Task.FromResult(new OperationResult(null, "GetErrorCode not supported when using admin service"));
         }
 
         dynamic wmi = service.GetService();
-        return wmi.GetErrorCode(
+        return Task.FromResult((OperationResult)wmi.GetErrorCode(
             Request.Host ?? ".",
             Request.Namespace ?? "root\\cimv2",
             Request.Class ?? "Win32_PnPEntity",
-            Request.PnpDeviceId ?? string.Empty);
+            Request.PnpDeviceId ?? string.Empty));
     }
 }

@@ -41,6 +41,6 @@ public class CleanTempCommandHandler :
         recurringJobs.AddOrUpdate<CommandExecutor>(
             "clean-temp",
             exec => exec.Execute("clean-temp", payload, CancellationToken.None),
-            Cron.HourInterval(7));
+            "0 */7 * * *");
     }
 }
