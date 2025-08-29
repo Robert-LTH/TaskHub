@@ -13,7 +13,7 @@ public class RegistryServicePlugin : IServicePlugin
 
     private class RegistryService
     {
-        public OperationResult Read(string keyPath, string property)
+        public static OperationResult Read(string keyPath, string property)
         {
             try
             {
@@ -39,7 +39,7 @@ public class RegistryServicePlugin : IServicePlugin
             }
         }
 
-        public OperationResult Write(string keyPath, string property, object value)
+        public static OperationResult Write(string keyPath, string property, object value)
         {
             try
             {
@@ -60,7 +60,7 @@ public class RegistryServicePlugin : IServicePlugin
             }
         }
 
-        public OperationResult Delete(string keyPath, string property)
+        public static OperationResult Delete(string keyPath, string property)
         {
             try
             {
@@ -80,9 +80,11 @@ public class RegistryServicePlugin : IServicePlugin
             }
         }
 
+        private static readonly char[] separator = new[] {'\\'};
+
         private static (RegistryKey hive, string subKey) SplitHive(string keyPath)
         {
-            var parts = keyPath.Split(new[] {'\\'}, 2);
+            var parts = keyPath.Split(separator, 2);
             var hiveName = parts[0].ToUpperInvariant();
             var subKey = parts.Length > 1 ? parts[1] : string.Empty;
             RegistryKey hive = hiveName switch

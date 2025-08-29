@@ -18,9 +18,14 @@ public class HttpServicePlugin : IServicePlugin, IDisposable
         var services = new ServiceCollection();
         services.AddTransient<LoggingHandler>(_ => new LoggingHandler(logger));
         services.AddHttpClient("http")
-            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            .ConfigurePrimaryHttpMessageHandler(() =>
             {
-                UseDefaultCredentials = true
+                var handler = new HttpClientHandler();
+                if (OperatingSystem.IsWindows())
+                {
+                    handler.UseDefaultCredentials = true;
+                }
+                return handler;
             })
             .AddHttpMessageHandler<LoggingHandler>();
         _provider = services.BuildServiceProvider();
@@ -34,6 +39,7 @@ public class HttpServicePlugin : IServicePlugin, IDisposable
     public void Dispose()
     {
         _provider.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     private class LoggingHandler : DelegatingHandler

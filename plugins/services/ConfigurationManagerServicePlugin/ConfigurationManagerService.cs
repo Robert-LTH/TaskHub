@@ -35,7 +35,7 @@ public class ConfigurationManagerServicePlugin : IServicePlugin
             });
         }
 
-        public OperationResult Query(string host, string wmiNamespace, string query)
+        public static OperationResult Query(string host, string wmiNamespace, string query)
         {
             try
             {
@@ -66,7 +66,7 @@ public class ConfigurationManagerServicePlugin : IServicePlugin
             }
         }
 
-        public OperationResult InvokeMethod(string host, string wmiNamespace, string path, string method, Dictionary<string, object?>? parameters = null)
+        public static OperationResult InvokeMethod(string host, string wmiNamespace, string path, string method, Dictionary<string, object?>? parameters = null)
         {
             try
             {
@@ -148,7 +148,7 @@ public class ConfigurationManagerServicePlugin : IServicePlugin
             }
         }
 
-        public OperationResult AddDeviceToCollection(string host, string wmiNamespace, string collectionId, string[] deviceIds)
+        public static OperationResult AddDeviceToCollection(string host, string wmiNamespace, string collectionId, string[] deviceIds)
         {
             try
             {
@@ -176,7 +176,7 @@ public class ConfigurationManagerServicePlugin : IServicePlugin
             }
         }
 
-        public OperationResult AddUserToCollection(string host, string wmiNamespace, string collectionId, string[] userIds)
+        public static OperationResult AddUserToCollection(string host, string wmiNamespace, string collectionId, string[] userIds)
         {
             try
             {

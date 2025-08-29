@@ -13,15 +13,14 @@ public class BasicAuthAuthorizationFilter : IDashboardAuthorizationFilter
 
     public BasicAuthAuthorizationFilter(string username, string password)
     {
-        using var sha256 = SHA256.Create();
-        _usernameHash = sha256.ComputeHash(Encoding.UTF8.GetBytes(username ?? string.Empty));
-        _passwordHash = sha256.ComputeHash(Encoding.UTF8.GetBytes(password ?? string.Empty));
+        _usernameHash = SHA256.HashData(Encoding.UTF8.GetBytes(username ?? string.Empty));
+        _passwordHash = SHA256.HashData(Encoding.UTF8.GetBytes(password ?? string.Empty));
     }
 
     public bool Authorize(DashboardContext context)
     {
         var httpContext = context.GetHttpContext();
-        var header = httpContext.Request.Headers["Authorization"].ToString();
+        var header = httpContext.Request.Headers.Authorization.ToString();
         if (!string.IsNullOrEmpty(header))
         {
             if (AuthenticationHeaderValue.TryParse(header, out var auth) &&
@@ -31,9 +30,8 @@ public class BasicAuthAuthorizationFilter : IDashboardAuthorizationFilter
                 var parts = Encoding.UTF8.GetString(credentialBytes).Split(':', 2);
                 if (parts.Length == 2)
                 {
-                    using var sha256 = SHA256.Create();
-                    var userHash = sha256.ComputeHash(Encoding.UTF8.GetBytes(parts[0]));
-                    var passHash = sha256.ComputeHash(Encoding.UTF8.GetBytes(parts[1]));
+                    var userHash = SHA256.HashData(Encoding.UTF8.GetBytes(parts[0]));
+                    var passHash = SHA256.HashData(Encoding.UTF8.GetBytes(parts[1]));
                     if (CryptographicOperations.FixedTimeEquals(userHash, _usernameHash) &&
                         CryptographicOperations.FixedTimeEquals(passHash, _passwordHash))
                     {

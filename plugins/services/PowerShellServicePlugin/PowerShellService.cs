@@ -17,7 +17,7 @@ public class PowerShellServicePlugin : IServicePlugin
 
     private class PowerShellService
     {
-        public OperationResult Execute(string scriptBase64, string? version = null, Dictionary<string, object>? properties = null)
+        public static OperationResult Execute(string scriptBase64, string? version = null, Dictionary<string, object>? properties = null)
         {
             try
             {

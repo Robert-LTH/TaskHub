@@ -51,7 +51,7 @@ public class FileSystemServicePlugin : IServicePlugin
             }
         }
 
-        public OperationResult Read(string path)
+        public static OperationResult Read(string path)
         {
             ValidatePath(path);
             try
@@ -66,7 +66,7 @@ public class FileSystemServicePlugin : IServicePlugin
             }
         }
 
-        public OperationResult Write(string path, string content)
+        public static OperationResult Write(string path, string content)
         {
             ValidatePath(path);
             try
@@ -81,7 +81,7 @@ public class FileSystemServicePlugin : IServicePlugin
             }
         }
 
-        public OperationResult Delete(string path)
+        public static OperationResult Delete(string path)
         {
             ValidatePath(path);
             try

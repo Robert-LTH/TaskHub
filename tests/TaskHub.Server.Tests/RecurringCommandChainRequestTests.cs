@@ -7,11 +7,13 @@ namespace TaskHub.Server.Tests;
 
 public class RecurringCommandChainRequestTests
 {
+    private static readonly string[] Commands = new[] { "echo" };
+
     [Fact]
     public void PropertiesAreSet()
     {
         var payload = JsonDocument.Parse("{}").RootElement;
-        var request = new RecurringCommandChainRequest(new[] { "echo" }, payload, "* * * * *", TimeSpan.FromMinutes(1), CallbackConnectionId: "client1");
+        var request = new RecurringCommandChainRequest(Commands, payload, "* * * * *", TimeSpan.FromMinutes(1), CallbackConnectionId: "client1");
 
         Assert.Equal(new[] { "echo" }, request.Commands);
         Assert.Equal("* * * * *", request.CronExpression);

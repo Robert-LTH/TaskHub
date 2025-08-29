@@ -41,6 +41,8 @@ public class CommandExecutorTests
         return new CommandExecutor(manager, Array.Empty<IResultPublisher>(), NullLogger<CommandExecutor>.Instance);
     }
 
+    private static readonly string[] commands = new[] { "cmd1", "cmd2" };
+
     [Fact]
     public async Task ExecuteChain_RunsCommandsInParallel()
     {
@@ -52,10 +54,12 @@ public class CommandExecutorTests
         var executor = CreateExecutor(handlers, typeof(StubService));
         var payload = JsonDocument.Parse("{}").RootElement;
         var sw = Stopwatch.StartNew();
-        await executor.ExecuteChain(new[] { "cmd1", "cmd2" }, payload, null, null!, CancellationToken.None);
+        await executor.ExecuteChain(commands, payload, null, null!, CancellationToken.None);
         sw.Stop();
         Assert.True(sw.Elapsed < TimeSpan.FromMilliseconds(350));
     }
+
+    private static readonly string[] commands = new[] { "cmd1", "cmdWait", "cmd2" };
 
     [Fact]
     public async Task ExecuteChain_WaitsWhenRequested()
@@ -69,7 +73,7 @@ public class CommandExecutorTests
         var executor = CreateExecutor(handlers, typeof(StubService));
         var payload = JsonDocument.Parse("{}").RootElement;
         var sw = Stopwatch.StartNew();
-        await executor.ExecuteChain(new[] { "cmd1", "cmdWait", "cmd2" }, payload, null, null!, CancellationToken.None);
+        await executor.ExecuteChain(commands, payload, null, null!, CancellationToken.None);
         sw.Stop();
         Assert.True(sw.Elapsed >= TimeSpan.FromMilliseconds(350));
     }

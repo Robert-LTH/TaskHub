@@ -133,6 +133,8 @@ public class ConfigurationManagerCommandHandlerTests
         Assert.Equal("success", result.Result);
     }
 
+    private static readonly string[] expected = new[] { "DEV1", "DEV2" };
+
     [Fact]
     public async Task ExecuteAddDeviceToCollection()
     {
@@ -153,9 +155,11 @@ public class ConfigurationManagerCommandHandlerTests
         var result = await handler.ExecuteAsync(payload, plugin, CancellationToken.None);
         Assert.True(plugin.Service.AddDeviceCalled);
         Assert.Equal("COLL", plugin.Service.CollectionId);
-        Assert.Equal(new[] { "DEV1", "DEV2" }, plugin.Service.DeviceIds);
+        Assert.Equal(expected, plugin.Service.DeviceIds);
         Assert.Equal("success", result.Result);
     }
+
+    private static readonly string[] expected = new[] { "USER1", "USER2" };
 
     [Fact]
     public async Task ExecuteAddUserToCollection()
@@ -177,9 +181,11 @@ public class ConfigurationManagerCommandHandlerTests
         var result = await handler.ExecuteAsync(payload, plugin, CancellationToken.None);
         Assert.True(plugin.Service.AddUserCalled);
         Assert.Equal("UCOLL", plugin.Service.CollectionId);
-        Assert.Equal(new[] { "USER1", "USER2" }, plugin.Service.UserIds);
+        Assert.Equal(expected, plugin.Service.UserIds);
         Assert.Equal("success", result.Result);
     }
+
+    private static readonly string[] expected = new[] { "DEV1", "DEV2" };
 
     [Fact]
     public async Task ExecuteAddDeviceToCollectionUsesAdminService()
@@ -201,8 +207,10 @@ public class ConfigurationManagerCommandHandlerTests
         Assert.True(plugin.Service.AddDeviceCalled);
         Assert.Equal("http://localhost", plugin.Service.BaseUrl);
         Assert.Equal("COLL", plugin.Service.CollectionId);
-        Assert.Equal(new[] { "DEV1", "DEV2" }, plugin.Service.DeviceIds);
+        Assert.Equal(expected, plugin.Service.DeviceIds);
     }
+
+    private static readonly string[] expected = new[] { "USER1", "USER2" };
 
     [Fact]
     public async Task ExecuteAddUserToCollectionUsesAdminService()
@@ -224,7 +232,7 @@ public class ConfigurationManagerCommandHandlerTests
         Assert.True(plugin.Service.AddUserCalled);
         Assert.Equal("http://localhost", plugin.Service.BaseUrl);
         Assert.Equal("UCOLL", plugin.Service.CollectionId);
-        Assert.Equal(new[] { "USER1", "USER2" }, plugin.Service.UserIds);
+        Assert.Equal(expected, plugin.Service.UserIds);
     }
 
     private class FakeAdminServicePlugin : IServicePlugin

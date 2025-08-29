@@ -17,7 +17,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHangfire(config => config.UseMemoryStorage());
 builder.Services.AddHangfireServer();
-builder.Services.AddHttpClient("msgraph").ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseDefaultCredentials = true });
+builder.Services.AddHttpClient("msgraph").ConfigurePrimaryHttpMessageHandler(() =>
+{
+    var handler = new HttpClientHandler();
+    if (OperatingSystem.IsWindows())
+    {
+        handler.UseDefaultCredentials = true;
+    }
+    return handler;
+});
 
 builder.Services.AddLogging();
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);

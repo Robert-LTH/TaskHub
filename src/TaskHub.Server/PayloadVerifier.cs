@@ -49,6 +49,7 @@ public class PayloadVerifier : IDisposable
     public void Dispose()
     {
         _certificate?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }
 

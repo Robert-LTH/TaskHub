@@ -1,9 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\\..\\..\\src\\TaskHub.Abstractions\\TaskHub.Abstractions.csproj" />

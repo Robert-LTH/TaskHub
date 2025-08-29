@@ -191,7 +191,7 @@ public class PluginManagerTests
     {
         public override IReadOnlyCollection<string> Commands => new[] { "stub" };
         public override string ServiceName => "Stub";
-        private StubCommand CreateCommand(JsonElement payload) =>
+        private static StubCommand CreateCommand(JsonElement payload) =>
             new StubCommand(JsonSerializer.Deserialize<StubRequest>(payload.GetRawText()) ?? new StubRequest());
 
         public override ICommand Create(JsonElement payload) => CreateCommand(payload);

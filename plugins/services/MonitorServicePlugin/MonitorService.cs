@@ -9,7 +9,7 @@ namespace MonitorServicePlugin;
 
 public class MonitorService
 {
-    public IEnumerable<MonitorInfo> GetMonitors()
+    public static IEnumerable<MonitorInfo> GetMonitors()
     {
         var list = new List<MonitorInfo>();
         try

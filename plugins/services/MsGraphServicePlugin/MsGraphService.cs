@@ -52,6 +52,7 @@ public class MsGraphServicePlugin : IServicePlugin
     {
         private readonly ClientCertificateCredential _credential;
         private readonly ILogger _logger;
+        private static readonly string[] scopes = new[] { "https://graph.microsoft.com/.default" };
 
         public AuthHandler(ClientCertificateCredential credential, ILogger logger)
         {
@@ -61,7 +62,7 @@ public class MsGraphServicePlugin : IServicePlugin
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            var token = await _credential.GetTokenAsync(new TokenRequestContext(new[] { "https://graph.microsoft.com/.default" }), cancellationToken);
+            var token = await _credential.GetTokenAsync(new TokenRequestContext(scopes), cancellationToken);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
             _logger.LogInformation("Requesting {Endpoint}", request.RequestUri);
             return await base.SendAsync(request, cancellationToken);

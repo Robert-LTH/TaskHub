@@ -21,7 +21,7 @@ public class MonitorInfoCommand : ICommand
     public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var monitorService = (MonitorService)service.GetService();
-        var monitors = monitorService.GetMonitors();
+        var monitors = MonitorService.GetMonitors();
         var element = JsonSerializer.SerializeToElement(monitors);
         _container?.AddReport("monitor", element);
         return Task.FromResult(new OperationResult(element, "success"));
