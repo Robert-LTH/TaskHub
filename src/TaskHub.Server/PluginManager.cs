@@ -54,12 +54,22 @@ public class PluginManager
                     if (dll == null) continue;
                     var context = new PluginLoadContext(dll);
                     var asm = context.LoadFromAssemblyPath(dll);
-                    var type = asm.GetTypes().FirstOrDefault(t => typeof(IServicePlugin).IsAssignableFrom(t) && !t.IsAbstract);
+                    var spiName = typeof(IServicePlugin).FullName;
+                    var type = asm.GetTypes().FirstOrDefault(t => !t.IsAbstract &&
+                        t.GetInterfaces().Any(i => string.Equals(i.FullName, spiName, StringComparison.Ordinal)));
                     if (type != null)
                     {
                         // Prefer the equivalent type from the default load context if available
                         var resolvedType = TryResolveDefaultContextType(type) ?? type;
-                        var plugin = (IServicePlugin)ActivatorUtilities.CreateInstance(_provider, resolvedType)!;
+                        var instance = ActivatorUtilities.CreateInstance(_provider, resolvedType)!;
+                        // Check optional prerequisites
+                        if (instance is TaskHub.Abstractions.IPluginPrerequisites pre && !pre.ShouldLoad(_provider, out var reason))
+                        {
+                            _logger.LogInformation("Skipping service plugin {Type} due to prerequisites not met: {Reason}", resolvedType.FullName, reason ?? "unspecified");
+                            continue;
+                        }
+
+                        var plugin = (IServicePlugin)instance;
                         var version = GetDirectoryVersion(pluginDir);
                         _services[plugin.Name] = (resolvedType, context, dll, version);
                         _assemblies[dll] = 0;
@@ -88,15 +98,34 @@ public class PluginManager
                 try
                 {
                     var pluginDir = GetLatestVersionDirectory(dir);
-                    var dll = Directory.GetFiles(pluginDir, "*.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
-                    if (dll == null) continue;
+                    var expectedDll = $"{Path.GetFileName(dir)}.dll";
+                    var dll = Directory.GetFiles(pluginDir, expectedDll, SearchOption.TopDirectoryOnly).FirstOrDefault();
+                    if (dll == null)
+                    {
+                        _logger.LogWarning("Handler plugin folder {Folder} missing expected dll {Dll}", pluginDir, expectedDll);
+                        continue;
+                    }
                     var context = new PluginLoadContext(dll);
                     var asm = context.LoadFromAssemblyPath(dll);
-                    var type = asm.GetTypes().FirstOrDefault(t => typeof(ICommandHandler).IsAssignableFrom(t) && !t.IsAbstract);
-                    if (type == null) continue;
+                    var ichName = typeof(ICommandHandler).FullName;
+                    var ichGenericName = typeof(ICommandHandler<>).FullName;
+                    var type = asm.GetTypes().FirstOrDefault(t => !t.IsAbstract &&
+                        t.GetInterfaces().Any(i => string.Equals(i.FullName, ichName, StringComparison.Ordinal) ||
+                            (i.IsGenericType && string.Equals(i.GetGenericTypeDefinition().FullName, ichGenericName, StringComparison.Ordinal))));
+                    if (type == null)
+                    {
+                        _logger.LogWarning("No ICommandHandler implementation found in {Path}", dll);
+                        continue;
+                    }
                     // Prefer the equivalent type from the default load context if available
                     var resolvedType = TryResolveDefaultContextType(type) ?? type;
-                    var handler = (ICommandHandler)ActivatorUtilities.CreateInstance(_provider, resolvedType)!;
+                    var handlerInstance = ActivatorUtilities.CreateInstance(_provider, resolvedType)!;
+                    if (handlerInstance is TaskHub.Abstractions.IPluginPrerequisites pre && !pre.ShouldLoad(_provider, out var reason))
+                    {
+                        _logger.LogInformation("Skipping handler plugin {Type} due to prerequisites not met: {Reason}", resolvedType.FullName, reason ?? "unspecified");
+                        continue;
+                    }
+                    var handler = (ICommandHandler)handlerInstance;
                     handler.OnLoaded(_provider);
                     var version = GetDirectoryVersion(pluginDir);
                     var inputs = DescribeInputs(type);

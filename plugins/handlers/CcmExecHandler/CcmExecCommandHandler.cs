@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.IO;
 using TaskHub.Abstractions;
 
 namespace CcmExecHandler;
 
-public class CcmExecCommandHandler : CommandHandlerBase, ICommandHandler<TriggerScheduleCommand>
+public class CcmExecCommandHandler : CommandHandlerBase, ICommandHandler<TriggerScheduleCommand>, IPluginPrerequisites
 {
     public override IReadOnlyCollection<string> Commands => new[] { "ccmexwc" };
     public override string ServiceName => "configurationmanager";
@@ -21,4 +22,24 @@ public class CcmExecCommandHandler : CommandHandlerBase, ICommandHandler<Trigger
         ((ICommandHandler<TriggerScheduleCommand>)this).Create(payload);
 
     public override void OnLoaded(IServiceProvider services) { }
+
+    public bool ShouldLoad(IServiceProvider services, out string? reason)
+    {
+        reason = null;
+        if (!OperatingSystem.IsWindows())
+        {
+            reason = "Non-Windows OS";
+            return false;
+        }
+
+        // Simple heuristic: CCM client folder exists
+        var ccmFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "CCM");
+        if (!Directory.Exists(ccmFolder))
+        {
+            reason = "Configuration Manager client not installed (CCM folder missing)";
+            return false;
+        }
+
+        return true;
+    }
 }
