@@ -33,6 +33,7 @@ builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddSingleton<PluginManager>();
 builder.Services.AddSingleton<CommandExecutor>();
 builder.Services.AddSingleton<PayloadVerifier>();
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApiDocument();
 builder.Services.AddSingleton<IReportingContainer, ReportingContainer>();
 builder.Services.AddHostedService<ReportingService>();
