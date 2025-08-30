@@ -7,6 +7,7 @@ using Hangfire.Dashboard;
 using System.Net.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using TaskHub.Abstractions;
@@ -14,6 +15,11 @@ using TaskHub.Server;
 using NSwag.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure logging to ensure plugin load messages are visible
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
 
 builder.Services.AddHangfire(config => config.UseMemoryStorage());
 builder.Services.AddHangfireServer();

@@ -34,14 +34,19 @@ public class PluginManager
     public void Load(string root)
     {
         var config = _provider.GetRequiredService<IConfiguration>();
+        var loadAll = config.GetValue<bool>("PluginSettings:LoadAll");
         var serviceRoot = Path.Combine(root, "services");
         if (Directory.Exists(serviceRoot))
         {
-            Console.WriteLine(serviceRoot);
             foreach (var dir in Directory.GetDirectories(serviceRoot))
             {
                 var name = Path.GetFileName(dir).Replace("ServicePlugin", string.Empty);
-                if (!config.GetSection($"PluginSettings:{name}").Exists()) continue;
+                var enabled = loadAll || config.GetSection($"PluginSettings:{name}").Exists();
+                if (!enabled)
+                {
+                    _logger.LogDebug("Skipping service plugin {Plugin} (no configuration section found)", name);
+                    continue;
+                }
                 try
                 {
                     var pluginDir = GetLatestVersionDirectory(dir);
@@ -58,6 +63,7 @@ public class PluginManager
                         var version = GetDirectoryVersion(pluginDir);
                         _services[plugin.Name] = (resolvedType, context, dll, version);
                         _assemblies[dll] = 0;
+                        _logger.LogInformation("Loaded service plugin {Name} v{Version} from {Path}", plugin.Name, version?.ToString() ?? string.Empty, dll);
                     }
                 }
                 catch (Exception ex)
@@ -73,7 +79,12 @@ public class PluginManager
             foreach (var dir in Directory.GetDirectories(handlerRoot))
             {
                 var name = Path.GetFileName(dir).Replace("Handler", string.Empty);
-                if (!config.GetSection($"PluginSettings:{name}").Exists()) continue;
+                var enabled = loadAll || config.GetSection($"PluginSettings:{name}").Exists();
+                if (!enabled)
+                {
+                    _logger.LogDebug("Skipping handler plugin {Plugin} (no configuration section found)", name);
+                    continue;
+                }
                 try
                 {
                     var pluginDir = GetLatestVersionDirectory(dir);
@@ -95,6 +106,7 @@ public class PluginManager
                         _commandInfos[command] = new CommandInfo(command, handler.ServiceName, inputs);
                     }
                     _assemblies[dll] = 0;
+                    _logger.LogInformation("Loaded handler plugin {Type} v{Version} for commands: {Commands}", resolvedType.FullName, version?.ToString() ?? string.Empty, string.Join(", ", handler.Commands));
                 }
                 catch (Exception ex)
                 {

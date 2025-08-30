@@ -11,6 +11,8 @@
     <PackageReference Include="Hangfire.MemoryStorage" Version="1.8.0" />
     <PackageReference Include="NSwag.AspNetCore" Version="14.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
   </ItemGroup>
     <ItemGroup>
       <Content Include="..\\..\\plugins\\*\\**\\*.*"

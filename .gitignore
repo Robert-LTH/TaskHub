@@ -1,9 +1,58 @@
-bin/
-obj/
+#
+# Git ignore for TaskHub (.NET + Node/Vite + IDEs)
+#
+
+# Build outputs
 **/bin/
 **/obj/
-plugins/**/*.dll
-plugins/**/*.pdb
+**/Build/
+**/publish/
+**/artifacts/
+
+# Test results and coverage
+**/TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage/
+lcov.info
+
+# Visual Studio/VSCode/Rider
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.rsuser
+_ReSharper*/
+*.DotSettings.user
+
+# Logs
+*.log
+logs/
+
+# OS junk
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Node / Vite
 node_modules/
 frontend/node_modules/
+dist/
 frontend/dist/
+
+# Environment files
+.env
+.env.*
+
+# Local configuration
+appsettings.Development.json
+
+*.dll
+*.exe
+*.pdb
+plugins/*
