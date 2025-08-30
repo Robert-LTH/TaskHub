@@ -1,0 +1,8 @@
+<Project>
+  <Target Name="CopyToPluginsFolder" AfterTargets="Build">
+    <ItemGroup>
+      <PluginFiles Include="$(OutputPath)*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(PluginFiles)" DestinationFolder="$(MSBuildThisFileDirectory)$(MSBuildProjectName)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

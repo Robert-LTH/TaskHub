@@ -12,10 +12,4 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
   </ItemGroup>
-  <Target Name="CopyToRoot" AfterTargets="Build">
-    <ItemGroup>
-      <Assemblies Include="$(OutputPath)*.dll" />
-    </ItemGroup>
-    <Copy SourceFiles="@(Assemblies)" DestinationFolder="$(MSBuildProjectDirectory)" />
-  </Target>
-</Project>
+  </Project>
