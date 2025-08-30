@@ -17,8 +17,9 @@ public static class CommandEndpoints
     {
         app.MapGet("/commands/available", (PluginManager manager) => manager.GetCommandInfos()).Produces<IEnumerable<CommandInfo>>();
 
-        app.MapPost("/commands", (CommandChainRequest request, IBackgroundJobClient client, PayloadVerifier verifier, HttpContext context, ILogger logger, CommandExecutor executor) =>
+        app.MapPost("/commands", (CommandChainRequest request, IBackgroundJobClient client, PayloadVerifier verifier, HttpContext context, ILoggerFactory loggerFactory, CommandExecutor executor) =>
         {
+            var logger = loggerFactory.CreateLogger("CommandEndpoints");
             if (!verifier.Verify(request.Payload, request.Signature))
             {
                 return Results.Unauthorized();
@@ -39,8 +40,9 @@ public static class CommandEndpoints
             return Results.Ok(new EnqueuedCommandResult(jobId, Array.Empty<ExecutedCommandResult>(), enqueueTime));
         }).Produces<EnqueuedCommandResult>();
 
-        app.MapPost("/commands/recurring", (RecurringCommandChainRequest request, IBackgroundJobClient client, PayloadVerifier verifier, HttpContext context, ILogger logger, CommandExecutor executor) =>
+        app.MapPost("/commands/recurring", (RecurringCommandChainRequest request, IBackgroundJobClient client, PayloadVerifier verifier, HttpContext context, ILoggerFactory loggerFactory, CommandExecutor executor) =>
         {
+            var logger = loggerFactory.CreateLogger("CommandEndpoints");
             if (!verifier.Verify(request.Payload, request.Signature))
             {
                 return Results.Unauthorized();

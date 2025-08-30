@@ -37,6 +37,7 @@ public class PluginManager
         var serviceRoot = Path.Combine(root, "services");
         if (Directory.Exists(serviceRoot))
         {
+            Console.WriteLine(serviceRoot);
             foreach (var dir in Directory.GetDirectories(serviceRoot))
             {
                 var name = Path.GetFileName(dir).Replace("ServicePlugin", string.Empty);
@@ -44,7 +45,7 @@ public class PluginManager
                 try
                 {
                     var pluginDir = GetLatestVersionDirectory(dir);
-                    var dll = Directory.GetFiles(pluginDir, "*.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
+                    var dll = Directory.GetFiles(pluginDir, $"{Path.GetFileName(dir)}.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
                     if (dll == null) continue;
                     var context = new PluginLoadContext(dll);
                     var asm = context.LoadFromAssemblyPath(dll);
