@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using TaskHub.Abstractions;
@@ -20,13 +21,38 @@ public class QueryCommand : ICommand
     {
         if (_useAdminService)
         {
-            dynamic admin = service.GetService();
-            return await admin.Get(Request.BaseUrl ?? string.Empty, Request.Resource ?? string.Empty, cancellationToken);
+            var admin = service.GetService();
+            var mi = admin.GetType().GetMethod(
+                "Get",
+                new[] { typeof(string), typeof(string), typeof(System.Threading.CancellationToken) });
+            if (mi == null)
+            {
+                throw new MissingMethodException("Admin service does not implement expected Get method");
+            }
+            var task = (System.Threading.Tasks.Task<OperationResult>)mi.Invoke(admin, new object[]
+            {
+                Request.BaseUrl ?? string.Empty,
+                Request.Resource ?? string.Empty,
+                cancellationToken
+            })!;
+            return await task.ConfigureAwait(false);
         }
         else
         {
-            dynamic wmi = service.GetService();
-            return wmi.Query(Request.Host ?? ".", Request.Namespace ?? "root\\cimv2", Request.Query ?? string.Empty);
+            var wmi = service.GetService();
+            var mi = wmi.GetType().GetMethod(
+                "Query",
+                new[] { typeof(string), typeof(string), typeof(string) });
+            if (mi == null)
+            {
+                throw new MissingMethodException("WMI service does not implement expected Query method");
+            }
+            return (OperationResult)mi.Invoke(wmi, new object[]
+            {
+                Request.Host ?? ".",
+                Request.Namespace ?? "root\\cimv2",
+                Request.Query ?? string.Empty
+            })!;
         }
     }
 }

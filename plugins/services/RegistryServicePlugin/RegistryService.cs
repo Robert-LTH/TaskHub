@@ -11,9 +11,9 @@ public class RegistryServicePlugin : IServicePlugin
 
     public object GetService() => new RegistryService();
 
-    private class RegistryService
+    public class RegistryService
     {
-        public static OperationResult Read(string keyPath, string property)
+        public OperationResult Read(string keyPath, string property)
         {
             try
             {
@@ -39,10 +39,14 @@ public class RegistryServicePlugin : IServicePlugin
             }
         }
 
-        public static OperationResult Write(string keyPath, string property, object value)
+        public OperationResult Write(string keyPath, string property, object value)
         {
             try
             {
+                if (string.IsNullOrEmpty(property))
+                {
+                    return new OperationResult(null, $"Failed to write '{property}' to '{keyPath}': invalid property name");
+                }
                 var (hive, subKey) = SplitHive(keyPath);
                 using var key = hive.CreateSubKey(subKey);
                 if (key == null)
@@ -60,7 +64,7 @@ public class RegistryServicePlugin : IServicePlugin
             }
         }
 
-        public static OperationResult Delete(string keyPath, string property)
+        public OperationResult Delete(string keyPath, string property)
         {
             try
             {
@@ -68,7 +72,7 @@ public class RegistryServicePlugin : IServicePlugin
                 using var key = hive.OpenSubKey(subKey, writable: true);
                 if (key == null)
                 {
-                    return new OperationResult(null, $"Registry key '{keyPath}' not found");
+                    return new OperationResult(null, $"Failed to delete '{property}' from '{keyPath}': Registry key not found");
                 }
 
                 key.DeleteValue(property, false);

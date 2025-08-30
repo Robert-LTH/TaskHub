@@ -22,21 +22,40 @@ public class AddDeviceToCollectionCommand : ICommand
         var ids = Request.DeviceIds ?? Array.Empty<string>();
         if (_useAdminService)
         {
-            dynamic admin = service.GetService();
-            return await admin.AddDeviceToCollection(
+            var admin = service.GetService();
+            var mi = admin.GetType().GetMethod(
+                "AddDeviceToCollection",
+                new[] { typeof(string), typeof(string), typeof(string[]), typeof(CancellationToken) });
+            if (mi == null)
+            {
+                throw new MissingMethodException("Admin service does not implement expected AddDeviceToCollection method");
+            }
+            var task = (Task<OperationResult>)mi.Invoke(admin, new object[]
+            {
                 Request.BaseUrl ?? string.Empty,
                 Request.CollectionId ?? string.Empty,
                 ids,
-                cancellationToken);
+                cancellationToken
+            })!;
+            return await task.ConfigureAwait(false);
         }
         else
         {
-            dynamic wmi = service.GetService();
-            return wmi.AddDeviceToCollection(
+            var wmi = service.GetService();
+            var mi = wmi.GetType().GetMethod(
+                "AddDeviceToCollection",
+                new[] { typeof(string), typeof(string), typeof(string), typeof(string[]) });
+            if (mi == null)
+            {
+                return new OperationResult(null, "AddDeviceToCollection not supported by service");
+            }
+            return (OperationResult)mi.Invoke(wmi, new object[]
+            {
                 Request.Host ?? ".",
                 Request.Namespace ?? "root\\cimv2",
                 Request.CollectionId ?? string.Empty,
-                ids);
+                ids
+            })!;
         }
     }
 }

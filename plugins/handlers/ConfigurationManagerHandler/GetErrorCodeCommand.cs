@@ -23,11 +23,21 @@ public class GetErrorCodeCommand : ICommand
             return Task.FromResult(new OperationResult(null, "GetErrorCode not supported when using admin service"));
         }
 
-        dynamic wmi = service.GetService();
-        return Task.FromResult((OperationResult)wmi.GetErrorCode(
+        var wmi = service.GetService();
+        var mi = wmi.GetType().GetMethod(
+            "GetErrorCode",
+            new[] { typeof(string), typeof(string), typeof(string), typeof(string) });
+        if (mi == null)
+        {
+            return Task.FromResult(new OperationResult(null, "GetErrorCode not supported by service"));
+        }
+        var result = (OperationResult)mi.Invoke(wmi, new object[]
+        {
             Request.Host ?? ".",
             Request.Namespace ?? "root\\cimv2",
             Request.Class ?? "Win32_PnPEntity",
-            Request.PnpDeviceId ?? string.Empty));
+            Request.PnpDeviceId ?? string.Empty
+        })!;
+        return Task.FromResult(result);
     }
 }

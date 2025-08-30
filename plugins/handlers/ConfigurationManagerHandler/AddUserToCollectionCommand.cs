@@ -22,21 +22,40 @@ public class AddUserToCollectionCommand : ICommand
         var ids = Request.UserIds ?? Array.Empty<string>();
         if (_useAdminService)
         {
-            dynamic admin = service.GetService();
-            return await admin.AddUserToCollection(
+            var admin = service.GetService();
+            var mi = admin.GetType().GetMethod(
+                "AddUserToCollection",
+                new[] { typeof(string), typeof(string), typeof(string[]), typeof(CancellationToken) });
+            if (mi == null)
+            {
+                throw new MissingMethodException("Admin service does not implement expected AddUserToCollection method");
+            }
+            var task = (Task<OperationResult>)mi.Invoke(admin, new object[]
+            {
                 Request.BaseUrl ?? string.Empty,
                 Request.CollectionId ?? string.Empty,
                 ids,
-                cancellationToken);
+                cancellationToken
+            })!;
+            return await task.ConfigureAwait(false);
         }
         else
         {
-            dynamic wmi = service.GetService();
-            return wmi.AddUserToCollection(
+            var wmi = service.GetService();
+            var mi = wmi.GetType().GetMethod(
+                "AddUserToCollection",
+                new[] { typeof(string), typeof(string), typeof(string), typeof(string[]) });
+            if (mi == null)
+            {
+                return new OperationResult(null, "AddUserToCollection not supported by service");
+            }
+            return (OperationResult)mi.Invoke(wmi, new object[]
+            {
                 Request.Host ?? ".",
                 Request.Namespace ?? "root\\cimv2",
                 Request.CollectionId ?? string.Empty,
-                ids);
+                ids
+            })!;
         }
     }
 }

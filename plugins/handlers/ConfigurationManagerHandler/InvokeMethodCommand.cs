@@ -24,12 +24,22 @@ public class InvokeMethodCommand : ICommand
             return Task.FromResult(new OperationResult(null, "InvokeMethod not supported when using admin service"));
         }
 
-        dynamic wmi = service.GetService();
-        return Task.FromResult((OperationResult)wmi.InvokeMethod(
+        var wmi = service.GetService();
+        var mi = wmi.GetType().GetMethod(
+            "InvokeMethod",
+            new[] { typeof(string), typeof(string), typeof(string), typeof(string), typeof(Dictionary<string, object?>) });
+        if (mi == null)
+        {
+            return Task.FromResult(new OperationResult(null, "InvokeMethod not supported by service"));
+        }
+        var result = (OperationResult)mi.Invoke(wmi, new object[]
+        {
             Request.Host ?? ".",
             Request.Namespace ?? "root\\cimv2",
             Request.Path ?? string.Empty,
             Request.Method ?? string.Empty,
-            Request.Parameters ?? new Dictionary<string, object?>()));
+            Request.Parameters ?? new Dictionary<string, object?>()
+        })!;
+        return Task.FromResult(result);
     }
 }

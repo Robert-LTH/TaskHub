@@ -22,7 +22,7 @@ public class FileSystemServicePlugin : IServicePlugin
 
     public object GetService() => new FileSystemService(_tempPaths);
 
-    private class FileSystemService
+    public class FileSystemService
     {
         private readonly string[] _tempPaths;
 
@@ -51,7 +51,7 @@ public class FileSystemServicePlugin : IServicePlugin
             }
         }
 
-        public static OperationResult Read(string path)
+        public OperationResult Read(string path)
         {
             ValidatePath(path);
             try
@@ -66,7 +66,7 @@ public class FileSystemServicePlugin : IServicePlugin
             }
         }
 
-        public static OperationResult Write(string path, string content)
+        public OperationResult Write(string path, string content)
         {
             ValidatePath(path);
             try
@@ -81,7 +81,7 @@ public class FileSystemServicePlugin : IServicePlugin
             }
         }
 
-        public static OperationResult Delete(string path)
+        public OperationResult Delete(string path)
         {
             ValidatePath(path);
             try

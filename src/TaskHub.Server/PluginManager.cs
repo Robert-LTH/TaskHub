@@ -51,9 +51,11 @@ public class PluginManager
                     var type = asm.GetTypes().FirstOrDefault(t => typeof(IServicePlugin).IsAssignableFrom(t) && !t.IsAbstract);
                     if (type != null)
                     {
-                        var plugin = (IServicePlugin)ActivatorUtilities.CreateInstance(_provider, type)!;
+                        // Prefer the equivalent type from the default load context if available
+                        var resolvedType = TryResolveDefaultContextType(type) ?? type;
+                        var plugin = (IServicePlugin)ActivatorUtilities.CreateInstance(_provider, resolvedType)!;
                         var version = GetDirectoryVersion(pluginDir);
-                        _services[plugin.Name] = (type, context, dll, version);
+                        _services[plugin.Name] = (resolvedType, context, dll, version);
                         _assemblies[dll] = 0;
                     }
                 }
@@ -80,13 +82,15 @@ public class PluginManager
                     var asm = context.LoadFromAssemblyPath(dll);
                     var type = asm.GetTypes().FirstOrDefault(t => typeof(ICommandHandler).IsAssignableFrom(t) && !t.IsAbstract);
                     if (type == null) continue;
-                    var handler = (ICommandHandler)ActivatorUtilities.CreateInstance(_provider, type)!;
+                    // Prefer the equivalent type from the default load context if available
+                    var resolvedType = TryResolveDefaultContextType(type) ?? type;
+                    var handler = (ICommandHandler)ActivatorUtilities.CreateInstance(_provider, resolvedType)!;
                     handler.OnLoaded(_provider);
                     var version = GetDirectoryVersion(pluginDir);
                     var inputs = DescribeInputs(type);
                     foreach (var command in handler.Commands)
                     {
-                        _handlers[command] = (type, context, dll, version);
+                        _handlers[command] = (resolvedType, context, dll, version);
                         _commandInfos[command] = new CommandInfo(command, handler.ServiceName, inputs);
                     }
                     _assemblies[dll] = 0;
@@ -97,6 +101,29 @@ public class PluginManager
                 }
             }
         }
+    }
+
+    private static Type? TryResolveDefaultContextType(Type pluginType)
+    {
+        try
+        {
+            var asmName = pluginType.Assembly.GetName().Name;
+            var fullName = pluginType.FullName;
+            if (asmName == null || fullName == null) return null;
+            foreach (var loaded in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (!string.Equals(loaded.GetName().Name, asmName, StringComparison.Ordinal)) continue;
+                var candidate = loaded.GetType(fullName, throwOnError: false, ignoreCase: false);
+                if (candidate != null)
+                {
+                    return candidate;
+                }
+            }
+        }
+        catch
+        {
+        }
+        return null;
     }
 
     private static string GetLatestVersionDirectory(string dir)
