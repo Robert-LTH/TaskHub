@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography.X509Certificates;
@@ -25,7 +26,7 @@ public class MsGraphServicePlugin : IServicePlugin
         var section = config.GetSection("PluginSettings:MsGraph");
         var tenantId = section["TenantId"];
         var clientId = section["ClientId"];
-        var certPath = section["CertificatePath"];
+        var certPath = section["CertificatePath"] ?? throw new IOException("asd");
         var certPassword = section["CertificatePassword"];
         var cert = OperatingSystem.IsWindows()
             ? new X509Certificate2(certPath)
