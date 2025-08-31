@@ -26,13 +26,14 @@ public static class CommandEndpoints
             }
             var requestedBy = context.User.Identity?.Name ?? "anonymous";
             string jobId;
+            var payloadJson = request.Payload.GetRawText();
             if (request.Delay.HasValue)
             {
-                jobId = client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, requestedBy, null!, CancellationToken.None), request.Delay.Value);
+                jobId = client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, payloadJson, requestedBy, null!, CancellationToken.None), request.Delay.Value);
             }
             else
             {
-                jobId = client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, request.Payload, requestedBy, null!, CancellationToken.None));
+                jobId = client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, payloadJson, requestedBy, null!, CancellationToken.None));
             }
             executor.SetCallback(jobId, request.CallbackConnectionId);
             logger.LogInformation("User {User} scheduled job {JobId} for commands {Commands}", requestedBy, jobId, request.Commands);
@@ -49,9 +50,10 @@ public static class CommandEndpoints
             }
             var jobId = Guid.NewGuid().ToString();
             var requestedBy = context.User.Identity?.Name ?? "anonymous"; 
+            var payloadJsonRecurring = request.Payload.GetRawText();
             client.Schedule(() => RecurringJob.AddOrUpdate<CommandExecutor>(
                 jobId,
-                exec => exec.ExecuteChain(request.Commands, request.Payload, requestedBy, null!, CancellationToken.None),
+                exec => exec.ExecuteChain(request.Commands, payloadJsonRecurring, requestedBy, null!, CancellationToken.None),
                 request.CronExpression,
                 new RecurringJobOptions()),
                 request.Delay);

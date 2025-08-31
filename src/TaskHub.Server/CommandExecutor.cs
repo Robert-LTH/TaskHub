@@ -20,7 +20,8 @@ public class CommandExecutor
     private const int MaxHistoryEntries = 100;
     private readonly ConcurrentDictionary<string, List<ExecutedCommandResult>> _history = new();
     private readonly ConcurrentQueue<string> _historyOrder = new();
-    private static readonly JsonElement NullElement = JsonDocument.Parse("null").RootElement;
+    private static readonly JsonDocument __NullDoc = JsonDocument.Parse("null");
+    private static readonly JsonElement NullElement = __NullDoc.RootElement;
 
     private readonly ConcurrentDictionary<string, string?> _callbacks = new();
 
@@ -142,5 +143,12 @@ public class CommandExecutor
         _logger.LogInformation("Job {JobId} finished for user {User} with result {Result}", jobId, requestedBy ?? "unknown", lastResult.Result);
 
         return lastResult;
+    }
+
+    // Overload that accepts JSON text to ensure payload survives background job serialization.
+    public async Task<OperationResult> ExecuteChain(IEnumerable<string> commands, string payloadJson, string? requestedBy, PerformContext context, CancellationToken token)
+    {
+        using var doc = JsonDocument.Parse(string.IsNullOrEmpty(payloadJson) ? "null" : payloadJson);
+        return await ExecuteChain(commands, doc.RootElement, requestedBy, context, token);
     }
 }
