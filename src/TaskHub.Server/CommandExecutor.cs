@@ -15,6 +15,7 @@ public class CommandExecutor
 {
     private readonly PluginManager _manager;
     private readonly IEnumerable<IResultPublisher> _publishers;
+    private readonly ScriptsRepository _scripts;
     private readonly ILogger<CommandExecutor> _logger;
 
     private const int MaxHistoryEntries = 100;
@@ -25,11 +26,18 @@ public class CommandExecutor
 
     private readonly ConcurrentDictionary<string, string?> _callbacks = new();
 
-    public CommandExecutor(PluginManager manager, IEnumerable<IResultPublisher> publishers, ILogger<CommandExecutor> logger)
+    public CommandExecutor(PluginManager manager, IEnumerable<IResultPublisher> publishers, ILogger<CommandExecutor> logger, ScriptsRepository scripts)
     {
         _manager = manager;
         _publishers = publishers;
         _logger = logger;
+        _scripts = scripts;
+    }
+
+    // Backwards-compatible overload used by some tests
+    public CommandExecutor(PluginManager manager, IEnumerable<IResultPublisher> publishers, ILogger<CommandExecutor> logger)
+        : this(manager, publishers, logger, new ScriptsRepository())
+    {
     }
 
     public void SetCallback(string jobId, string? connectionId) => _callbacks[jobId] = connectionId;
@@ -49,9 +57,53 @@ public class CommandExecutor
         }
 
         var service = _manager.GetService(handler.ServiceName);
-        var result = await handler.ExecuteAsync(payload, service, token);
+        var effectivePayload = ResolvePayload(command, payload);
+        var result = await handler.ExecuteAsync(effectivePayload, service, token);
         var version = _manager.GetHandlerVersion(command);
         return (result, version);
+    }
+
+    private JsonElement ResolvePayload(string command, JsonElement payload)
+    {
+        try
+        {
+            if (!string.Equals(command, "powershell-script", StringComparison.OrdinalIgnoreCase))
+            {
+                return payload;
+            }
+            if (payload.ValueKind != JsonValueKind.Object)
+            {
+                return payload;
+            }
+            if (!payload.TryGetProperty("scriptId", out var idProp) || idProp.ValueKind != JsonValueKind.String)
+            {
+                return payload;
+            }
+            var id = idProp.GetString();
+            if (string.IsNullOrWhiteSpace(id)) return payload;
+            if (!_scripts.TryGet(id!, out var item) || item == null) return payload;
+
+            // Build a new object preserving version/properties, replacing Script
+            using var doc = JsonDocument.Parse(payload.GetRawText());
+            var root = doc.RootElement;
+            var obj = new Dictionary<string, object?>();
+            if (root.TryGetProperty("version", out var ver) && ver.ValueKind == JsonValueKind.String)
+            {
+                obj["version"] = ver.GetString();
+            }
+            if (root.TryGetProperty("properties", out var props) && props.ValueKind != JsonValueKind.Undefined && props.ValueKind != JsonValueKind.Null)
+            {
+                obj["properties"] = JsonSerializer.Deserialize<Dictionary<string, object?>>(props.GetRawText());
+            }
+            obj["script"] = item.Content;
+            var json = JsonSerializer.SerializeToUtf8Bytes(obj);
+            using var newDoc = JsonDocument.Parse(json);
+            return newDoc.RootElement.Clone();
+        }
+        catch
+        {
+            return payload;
+        }
     }
 
     public async Task<OperationResult> Execute(string command, JsonElement payload, CancellationToken token)

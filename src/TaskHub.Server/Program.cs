@@ -39,6 +39,8 @@ builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddSingleton<PluginManager>();
 builder.Services.AddSingleton<CommandExecutor>();
 builder.Services.AddSingleton<PayloadVerifier>();
+builder.Services.AddSingleton<ScriptsRepository>();
+builder.Services.AddSingleton<ScriptSignatureVerifier>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApiDocument();
 builder.Services.AddSingleton<IReportingContainer, ReportingContainer>();
@@ -68,6 +70,7 @@ var pluginManager = app.Services.GetRequiredService<PluginManager>();
 pluginManager.Load(Path.Combine(AppContext.BaseDirectory, "plugins"));
 
 app.MapPluginEndpoints();
+app.MapScriptEndpoints();
 
 if (!string.Equals(jobHandlingMode, "WebSocket", StringComparison.OrdinalIgnoreCase))
 {

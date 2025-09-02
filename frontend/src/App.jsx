@@ -8,12 +8,14 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 
 import CommandNode from './CommandNode';
+import ScriptsManager from './ScriptsManager';
 
 export default function App() {
   const [commands, setCommands] = useState([]);
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
+  const [view, setView] = useState('flow'); // 'flow' | 'scripts'
   const id = useRef(0);
   const reactFlowWrapper = useRef(null);
 
@@ -70,34 +72,46 @@ export default function App() {
 
   return (
     <ReactFlowProvider>
-      <div style={{ display: 'flex', height: '100vh' }}>
-        <div style={{ width: 200, borderRight: '1px solid #ccc', padding: 10 }}>
-          <h3>Commands</h3>
-          {commands.map(cmd => (
-            <div
-              key={cmd.name}
-              draggable
-              onDragStart={(e) => onDragStart(e, cmd)}
-              style={{ padding: 4, border: '1px solid #999', borderRadius: 4, marginBottom: 8, cursor: 'grab' }}
-            >
-              {cmd.name}
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+        <div style={{ borderBottom: '1px solid #ddd', padding: '8px 12px', display: 'flex', gap: 8 }}>
+          <button onClick={() => setView('flow')} disabled={view==='flow'}>Flow</button>
+          <button onClick={() => setView('scripts')} disabled={view==='scripts'}>Scripts</button>
+        </div>
+        {view === 'flow' ? (
+          <div style={{ display: 'flex', flex: 1 }}>
+            <div style={{ width: 200, borderRight: '1px solid #ccc', padding: 10 }}>
+              <h3>Commands</h3>
+              {commands.map(cmd => (
+                <div
+                  key={cmd.name}
+                  draggable
+                  onDragStart={(e) => onDragStart(e, cmd)}
+                  style={{ padding: 4, border: '1px solid #999', borderRadius: 4, marginBottom: 8, cursor: 'grab' }}
+                >
+                  {cmd.name}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <div style={{ flex: 1 }} ref={reactFlowWrapper}>
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onConnect={onConnect}
-            onInit={setReactFlowInstance}
-            onDrop={onDrop}
-            onDragOver={onDragOver}
-            nodeTypes={nodeTypes}
-          >
-            <Controls />
-            <Background />
-          </ReactFlow>
-        </div>
+            <div style={{ flex: 1 }} ref={reactFlowWrapper}>
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onConnect={onConnect}
+                onInit={setReactFlowInstance}
+                onDrop={onDrop}
+                onDragOver={onDragOver}
+                nodeTypes={nodeTypes}
+              >
+                <Controls />
+                <Background />
+              </ReactFlow>
+            </div>
+          </div>
+        ) : (
+          <div style={{ flex: 1 }}>
+            <ScriptsManager />
+          </div>
+        )}
       </div>
     </ReactFlowProvider>
   );
