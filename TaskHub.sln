@@ -73,6 +73,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonitorHandler", "plugins/h
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonitorHandler.Tests", "tests/MonitorHandler.Tests/MonitorHandler.Tests.csproj", "{E80A5E92-76BC-4259-8B04-F4E7C8FDBB5B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HyperVServicePlugin", "plugins/services/HyperVServicePlugin/HyperVServicePlugin.csproj", "{1BBA96B2-9B56-4442-88C4-1EDF80E58216}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HyperVHandler", "plugins/handlers/HyperVHandler/HyperVHandler.csproj", "{705DAE0E-564A-40AE-83C4-A675C5C02D56}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerShellHandler", "plugins/handlers/PowerShellHandler/PowerShellHandler.csproj", "{AE0493D8-BCAB-4127-9334-873DA3A66FC4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerShellHandler.Tests", "tests/PowerShellHandler.Tests/PowerShellHandler.Tests.csproj", "{14CFDE9C-31FF-4F91-9474-B202E7E30160}"
@@ -255,6 +259,14 @@ Global
         {D5375916-D786-404E-B271-BCC353D520BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {D5375916-D786-404E-B271-BCC353D520BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {D5375916-D786-404E-B271-BCC353D520BF}.Release|Any CPU.Build.0 = Release|Any CPU
+        {1BBA96B2-9B56-4442-88C4-1EDF80E58216}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {1BBA96B2-9B56-4442-88C4-1EDF80E58216}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {1BBA96B2-9B56-4442-88C4-1EDF80E58216}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {1BBA96B2-9B56-4442-88C4-1EDF80E58216}.Release|Any CPU.Build.0 = Release|Any CPU
+        {705DAE0E-564A-40AE-83C4-A675C5C02D56}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {705DAE0E-564A-40AE-83C4-A675C5C02D56}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {705DAE0E-564A-40AE-83C4-A675C5C02D56}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {705DAE0E-564A-40AE-83C4-A675C5C02D56}.Release|Any CPU.Build.0 = Release|Any CPU
     EndGlobalSection
     GlobalSection(SolutionProperties) = preSolution
         HideSolutionNode = FALSE
