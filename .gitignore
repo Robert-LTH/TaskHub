@@ -55,4 +55,3 @@ appsettings.Development.json
 *.dll
 *.exe
 *.pdb
-plugins/*
