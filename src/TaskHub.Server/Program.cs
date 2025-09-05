@@ -10,6 +10,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using TaskHub.Abstractions;
 using TaskHub.Server;
 using NSwag.AspNetCore;
@@ -45,6 +48,12 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApiDocument();
 builder.Services.AddSingleton<IReportingContainer, ReportingContainer>();
 builder.Services.AddHostedService<ReportingService>();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("CommandExecutor", policy => policy.RequireRole("CommandExecutor"));
+});
 
 var jobHandlingMode = builder.Configuration.GetValue<string>("JobHandling:Mode");
 if (string.Equals(jobHandlingMode, "WebSocket", StringComparison.OrdinalIgnoreCase))
@@ -58,6 +67,9 @@ var app = builder.Build();
 
 app.UseOpenApi();
 app.UseSwaggerUi();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 var dashboardUser = builder.Configuration["Hangfire:Username"] ?? string.Empty;
 var dashboardPass = builder.Configuration["Hangfire:Password"] ?? string.Empty;
