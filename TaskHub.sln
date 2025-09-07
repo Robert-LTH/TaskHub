@@ -89,6 +89,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiskSpaceHandler", "plugins
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiskSpaceHandler.Tests", "tests/DiskSpaceHandler.Tests/DiskSpaceHandler.Tests.csproj", "{D5375916-D786-404E-B271-BCC353D520BF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppDomainServicePlugin", "plugins/services/AppDomainServicePlugin/AppDomainServicePlugin.csproj", "{7445DDC6-3258-4671-B5E6-E4980C8779FC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModuleInfoHandler", "plugins/handlers/ModuleInfoHandler/ModuleInfoHandler.csproj", "{CFD85D6E-AAB0-4496-8D46-7FE2538F6498}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModuleInfoHandler.Tests", "tests/ModuleInfoHandler.Tests/ModuleInfoHandler.Tests.csproj", "{02FDAEE1-A872-4157-B6C7-7018A1FBE188}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppDomainServicePlugin.Tests", "tests/AppDomainServicePlugin.Tests/AppDomainServicePlugin.Tests.csproj", "{A5B52B35-0158-4ED9-A981-8D6E7D957C85}"
+EndProject
 Global
     GlobalSection(SolutionConfigurationPlatforms) = preSolution
         Debug|Any CPU = Debug|Any CPU
@@ -267,6 +275,22 @@ Global
         {705DAE0E-564A-40AE-83C4-A675C5C02D56}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {705DAE0E-564A-40AE-83C4-A675C5C02D56}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {705DAE0E-564A-40AE-83C4-A675C5C02D56}.Release|Any CPU.Build.0 = Release|Any CPU
+        {7445DDC6-3258-4671-B5E6-E4980C8779FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {7445DDC6-3258-4671-B5E6-E4980C8779FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {7445DDC6-3258-4671-B5E6-E4980C8779FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {7445DDC6-3258-4671-B5E6-E4980C8779FC}.Release|Any CPU.Build.0 = Release|Any CPU
+        {CFD85D6E-AAB0-4496-8D46-7FE2538F6498}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {CFD85D6E-AAB0-4496-8D46-7FE2538F6498}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {CFD85D6E-AAB0-4496-8D46-7FE2538F6498}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {CFD85D6E-AAB0-4496-8D46-7FE2538F6498}.Release|Any CPU.Build.0 = Release|Any CPU
+        {02FDAEE1-A872-4157-B6C7-7018A1FBE188}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {02FDAEE1-A872-4157-B6C7-7018A1FBE188}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {02FDAEE1-A872-4157-B6C7-7018A1FBE188}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {02FDAEE1-A872-4157-B6C7-7018A1FBE188}.Release|Any CPU.Build.0 = Release|Any CPU
+        {A5B52B35-0158-4ED9-A981-8D6E7D957C85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {A5B52B35-0158-4ED9-A981-8D6E7D957C85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {A5B52B35-0158-4ED9-A981-8D6E7D957C85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {A5B52B35-0158-4ED9-A981-8D6E7D957C85}.Release|Any CPU.Build.0 = Release|Any CPU
     EndGlobalSection
     GlobalSection(SolutionProperties) = preSolution
         HideSolutionNode = FALSE
