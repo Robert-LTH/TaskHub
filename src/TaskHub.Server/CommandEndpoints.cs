@@ -67,6 +67,39 @@ public static class CommandEndpoints
         }).RequireAuthorization("CommandExecutor")
           .Produces<EnqueuedCommandResult>();
 
+        app.MapPut("/commands/{id}", (string id, CommandChainRequest request, IBackgroundJobClient client, PayloadVerifier verifier, HttpContext context, ILoggerFactory loggerFactory, CommandExecutor executor) =>
+        {
+            var logger = loggerFactory.CreateLogger("CommandEndpoints");
+            if (!verifier.Verify(request.Payload, request.Signature))
+            {
+                return Results.Unauthorized();
+            }
+
+            var jobDetails = JobStorage.Current.GetMonitoringApi().JobDetails(id);
+            if (jobDetails == null)
+            {
+                return Results.NotFound();
+            }
+
+            client.Delete(id);
+            var requestedBy = context.User.Identity?.Name ?? "anonymous";
+            var payloadJson = request.Payload.GetRawText();
+            string jobId;
+            if (request.Delay.HasValue)
+            {
+                jobId = client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, payloadJson, requestedBy, null!, CancellationToken.None), request.Delay.Value);
+            }
+            else
+            {
+                jobId = client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, payloadJson, requestedBy, null!, CancellationToken.None));
+            }
+            executor.SetCallback(jobId, request.CallbackConnectionId);
+            logger.LogInformation("User {User} modified job {OldJob} to new job {JobId} for commands {Commands}", requestedBy, id, jobId, request.Commands);
+            var enqueueTime = DateTimeOffset.UtcNow + (request.Delay ?? TimeSpan.Zero);
+            return Results.Ok(new EnqueuedCommandResult(jobId, Array.Empty<ExecutedCommandResult>(), enqueueTime));
+        }).RequireAuthorization("CommandExecutor")
+          .Produces<EnqueuedCommandResult>();
+
         app.MapPost("/commands/{id}/cancel", (string id, IBackgroundJobClient client) =>
         {
             return client.Delete(id) ? Results.Ok() : Results.NotFound();
