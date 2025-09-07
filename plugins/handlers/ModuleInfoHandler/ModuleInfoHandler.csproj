@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\\..\\..\\src\\TaskHub.Abstractions\\TaskHub.Abstractions.csproj" />
+    <ProjectReference Include="..\\..\\..\\src\\TaskHub.Server\\TaskHub.Server.csproj" />
+    <ProjectReference Include="..\\..\\services\\AppDomainServicePlugin\\AppDomainServicePlugin.csproj" />
+  </ItemGroup>
+</Project>
