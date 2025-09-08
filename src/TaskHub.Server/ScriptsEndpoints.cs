@@ -12,12 +12,14 @@ public static class ScriptsEndpoints
     public static IEndpointRouteBuilder MapScriptEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapGet("/scripts", (ScriptsRepository repo) => Results.Ok(repo.GetAll()))
+            .RequireAuthorization("ScriptExecutor")
             .Produces<IEnumerable<ScriptItem>>();
 
         app.MapGet("/scripts/{id}", (string id, ScriptsRepository repo) =>
         {
             return repo.TryGet(id, out var item) && item != null ? Results.Ok(item) : Results.NotFound();
-        }).Produces<ScriptItem>();
+        }).RequireAuthorization("ScriptExecutor")
+          .Produces<ScriptItem>();
 
         app.MapPost("/scripts", (JsonDocument body, ScriptsRepository repo, ScriptSignatureVerifier sigVerifier) =>
         {
@@ -27,7 +29,8 @@ public static class ScriptsEndpoints
             item.IsVerified = sigVerifier.IsAuthenticodeValid(item.Content);
             var saved = repo.CreateOrUpdate(item);
             return Results.Ok(saved);
-        }).Produces<ScriptItem>();
+        }).RequireAuthorization("ScriptAdmin")
+          .Produces<ScriptItem>();
 
         app.MapPut("/scripts/{id}", (string id, JsonDocument body, ScriptsRepository repo, ScriptSignatureVerifier sigVerifier) =>
         {
@@ -43,7 +46,7 @@ public static class ScriptsEndpoints
         app.MapDelete("/scripts/{id}", (string id, ScriptsRepository repo) =>
         {
             return repo.Delete(id) ? Results.Ok() : Results.NotFound();
-        });
+        }).RequireAuthorization("ScriptAdmin");
 
         return app;
     }

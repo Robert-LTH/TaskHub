@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Collections.Generic;
 using Hangfire;
 using Hangfire.MemoryStorage;
 using Microsoft.AspNetCore.Authentication;
@@ -28,16 +29,37 @@ public class CommandModifyTests
             .ConfigureServices(services =>
             {
                 services.AddLogging();
+                services.AddRouting();
                 services.AddAuthentication("Test")
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
+                // Configure authorization policies from in-memory configuration
+                var config = new ConfigurationBuilder()
+                    .AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["Authorization:Policies:CommandExecutor:Roles:0"] = "CommandExecutor"
+                    })
+                    .Build();
+                services.AddSingleton<IConfiguration>(config);
                 services.AddAuthorization(options =>
                 {
-                    options.AddPolicy("CommandExecutor", p => p.RequireRole("CommandExecutor"));
+                    var policiesSection = config.GetSection("Authorization:Policies");
+                    foreach (var policySection in policiesSection.GetChildren())
+                    {
+                        var roles = policySection.GetSection("Roles").Get<string[]>() ?? Array.Empty<string>();
+                        if (roles.Length > 0)
+                        {
+                            options.AddPolicy(policySection.Key, p => p.RequireRole(roles));
+                        }
+                    }
+                    if (options.GetPolicy("CommandExecutor") is null)
+                    {
+                        options.AddPolicy("CommandExecutor", p => p.RequireRole("CommandExecutor"));
+                    }
                 });
-                services.AddSingleton<IBackgroundJobClient>(new BackgroundJobClient(storage));
+                services.AddSingleton<IBackgroundJobClient>(new BackgroundJobClient(JobStorage.Current));
                 services.AddSingleton<PluginManager>(new PluginManager(new ServiceCollection().BuildServiceProvider()));
                 services.AddSingleton<CommandExecutor>(sp => new CommandExecutor(sp.GetRequiredService<PluginManager>(), Array.Empty<IResultPublisher>(), NullLogger<CommandExecutor>.Instance));
-                services.AddSingleton<PayloadVerifier>(sp => new PayloadVerifier(new ConfigurationBuilder().Build()));
+                services.AddSingleton<PayloadVerifier>(sp => new PayloadVerifier(config));
             })
             .Configure(app =>
             {
