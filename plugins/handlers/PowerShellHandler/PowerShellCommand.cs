@@ -19,7 +19,7 @@ public class PowerShellCommand : ICommand
 
     public PowerShellScriptRequest Request { get; }
 
-    Task<OperationResult> ICommand.ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
+    Task<OperationResult> ICommand.ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Executing PowerShell script ({Length} chars)", Request.Script?.Length ?? 0);
         var scriptBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(Request.Script));

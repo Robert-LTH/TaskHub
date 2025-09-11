@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using TaskHub.Abstractions;
 
 namespace HyperVHandler;
@@ -13,7 +14,7 @@ public class CreateVSwitchCommand : ICommand
 
     public CreateVSwitchRequest Request { get; }
 
-    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
     {
         dynamic hv = service.GetService();
         OperationResult result = hv.CreateVSwitch(Request.Name, Request.SwitchType);

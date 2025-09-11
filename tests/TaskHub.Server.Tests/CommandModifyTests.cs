@@ -58,7 +58,7 @@ public class CommandModifyTests
                 });
                 services.AddSingleton<IBackgroundJobClient>(new BackgroundJobClient(JobStorage.Current));
                 services.AddSingleton<PluginManager>(new PluginManager(new ServiceCollection().BuildServiceProvider()));
-                services.AddSingleton<CommandExecutor>(sp => new CommandExecutor(sp.GetRequiredService<PluginManager>(), Array.Empty<IResultPublisher>(), NullLogger<CommandExecutor>.Instance));
+                services.AddSingleton<CommandExecutor>(sp => new CommandExecutor(sp.GetRequiredService<PluginManager>(), Array.Empty<IResultPublisher>(), NullLoggerFactory.Instance));
                 services.AddSingleton<PayloadVerifier>(sp => new PayloadVerifier(config));
             })
             .Configure(app =>

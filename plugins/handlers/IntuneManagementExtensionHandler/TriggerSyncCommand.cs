@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using TaskHub.Abstractions;
 
 namespace IntuneManagementExtensionHandler;
@@ -15,7 +16,7 @@ public class TriggerSyncCommand : ICommand
 
     public SyncRequest Request { get; }
 
-    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
     {
         const string script = @"
 $svc = Get-Service -Name 'IntuneManagementExtension' -ErrorAction SilentlyContinue

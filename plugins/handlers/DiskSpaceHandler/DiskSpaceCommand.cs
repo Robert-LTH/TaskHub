@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using TaskHub.Abstractions;
 
 namespace DiskSpaceHandler;
@@ -16,7 +17,7 @@ public class DiskSpaceCommand : ICommand
 
     public DiskSpaceRequest Request { get; }
 
-    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
     {
         dynamic fs = service.GetService();
         OperationResult result = fs.GetFreeSpace(Request.Path);

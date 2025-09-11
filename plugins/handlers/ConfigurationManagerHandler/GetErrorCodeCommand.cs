@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using TaskHub.Abstractions;
 
 namespace ConfigurationManagerHandler;
@@ -16,7 +17,7 @@ public class GetErrorCodeCommand : ICommand
 
     public GetErrorCodeRequest Request { get; }
 
-    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
     {
         if (_useAdminService)
         {

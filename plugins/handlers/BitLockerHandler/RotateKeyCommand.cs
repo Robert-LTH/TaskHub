@@ -3,6 +3,7 @@ using System.Management;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using TaskHub.Abstractions;
 
 namespace BitLockerHandler;
@@ -16,7 +17,7 @@ public class RotateKeyCommand : ICommand
 
     public RotateKeyRequest Request { get; }
 
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
+    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
     {
         // Ensure service is initialized
         _ = service.GetService();

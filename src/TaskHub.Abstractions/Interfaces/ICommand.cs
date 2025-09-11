@@ -3,6 +3,7 @@ namespace TaskHub.Abstractions;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 public interface ICommand
 {
@@ -16,6 +17,7 @@ public interface ICommand
 
     Task<OperationResult> ExecuteAsync(
         IServicePlugin service,
+        ILogger logger,
         CancellationToken cancellationToken);
 }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using TaskHub.Abstractions;
 
 namespace ConfigurationManagerHandler;
@@ -17,7 +18,7 @@ public class AddUserToCollectionCommand : ICommand
 
     public AddUserToCollectionRequest Request { get; }
 
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
+    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
     {
         var ids = Request.UserIds ?? Array.Empty<string>();
         if (_useAdminService)

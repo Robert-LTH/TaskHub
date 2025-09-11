@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using MonitorServicePlugin;
 using TaskHub.Abstractions;
 
@@ -18,7 +19,7 @@ public class MonitorInfoCommand : ICommand
 
     public MonitorInfoRequest Request { get; }
 
-    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
     {
         var monitorService = (MonitorService)service.GetService();
         var monitors = MonitorService.GetMonitors();

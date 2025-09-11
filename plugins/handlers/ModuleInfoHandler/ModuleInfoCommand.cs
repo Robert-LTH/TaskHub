@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using TaskHub.Abstractions;
 
 namespace ModuleInfoHandler;
@@ -16,7 +17,7 @@ public class ModuleInfoCommand : ICommand
         _container = container;
     }
 
-    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
     {
         var domain = (AppDomain)service.GetService();
         var modules = domain.GetAssemblies()

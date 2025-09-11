@@ -26,6 +26,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Configure logging to ensure plugin load messages are visible
 builder.Logging.ClearProviders();
+// Mirror ILogger to Hangfire job console
+builder.Logging.AddProvider(new TaskHub.Server.PerformContextLoggerProvider());
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
@@ -41,8 +43,7 @@ builder.Services.AddHttpClient("msgraph").ConfigurePrimaryHttpMessageHandler(() 
     return handler;
 });
 
-// Mirror ILogger to Hangfire job console
-builder.Logging.AddProvider(new TaskHub.Server.PerformContextLoggerProvider());
+
 
 // Mirror Trace.Write/WriteLine into Hangfire job console when available
 Trace.Listeners.Add(new TaskHub.Server.PerformContextTraceListener());

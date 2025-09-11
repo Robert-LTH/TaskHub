@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace TaskHub.Abstractions;
 
@@ -20,7 +21,7 @@ public abstract class CommandHandlerBase : ICommandHandler
         CancellationToken cancellationToken)
     {
         var command = Create(payload);
-        var result = await command.ExecuteAsync(service, cancellationToken);
+        var result = await command.ExecuteAsync(service, NullLogger.Instance, cancellationToken);
         return result;
     }
 
@@ -32,7 +33,7 @@ public abstract class CommandHandlerBase : ICommandHandler
     {
         // Default implementation ignores logger; override in handlers to use it.
         var command = Create(payload);
-        var result = await command.ExecuteAsync(service, cancellationToken);
+        var result = await command.ExecuteAsync(service, logger, cancellationToken);
         return result;
     }
 }

@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using TaskHub.Abstractions;
 using TaskHub.Server;
 using Xunit;
+using Microsoft.Extensions.Logging;
 
 namespace TaskHub.Server.Tests;
 
@@ -180,6 +181,7 @@ public class PluginManagerTests
 
         public System.Threading.Tasks.Task<OperationResult> ExecuteAsync(
             IServicePlugin service,
+            ILogger logger,
             System.Threading.CancellationToken cancellationToken)
         {
             var element = JsonDocument.Parse("{}" ).RootElement;

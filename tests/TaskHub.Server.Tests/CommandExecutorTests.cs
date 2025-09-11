@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using TaskHub.Abstractions;
 using TaskHub.Server;
@@ -38,7 +39,7 @@ public class CommandExecutorTests
     private static CommandExecutor CreateExecutor(Dictionary<string, Type> handlers, Type serviceType)
     {
         var manager = CreateManager(handlers, serviceType);
-        return new CommandExecutor(manager, Array.Empty<IResultPublisher>(), NullLogger<CommandExecutor>.Instance);
+        return new CommandExecutor(manager, Array.Empty<IResultPublisher>(), NullLoggerFactory.Instance);
     }
 
     [Fact]
@@ -91,7 +92,7 @@ public class CommandExecutorTests
             _delay = delay;
             WaitForPrevious = wait;
         }
-        public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
+        public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
         {
             await Task.Delay(_delay, cancellationToken);
             return new OperationResult(JsonDocument.Parse("null").RootElement, "ok");

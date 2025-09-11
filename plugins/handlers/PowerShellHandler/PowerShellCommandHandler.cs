@@ -4,13 +4,21 @@ using System.Text.Json;
 using TaskHub.Abstractions;
 using PowerShellServicePlugin;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using System.Threading.Tasks;
 
 namespace PowerShellHandler;
 
 public class PowerShellCommandHandler : CommandHandlerBase, ICommandHandler<PowerShellCommand>
 {
-    private ILoggerFactory? _loggerFactory;
-    public PowerShellCommandHandler() { }
+    private readonly ILogger _logger;
+    public PowerShellCommandHandler(ILoggerFactory loggerFactory)
+    {
+        _logger = loggerFactory.CreateLogger<PowerShellCommandHandler>();
+    }
+
+    // Back-compat for tests and callers not using DI
+    public PowerShellCommandHandler() : this(NullLoggerFactory.Instance) { }
 
     public override IReadOnlyCollection<string> Commands => new[] { "powershell-script" };
     public override string ServiceName => "powershell";
@@ -19,16 +27,12 @@ public class PowerShellCommandHandler : CommandHandlerBase, ICommandHandler<Powe
     {
         var request = JsonSerializer.Deserialize<PowerShellScriptRequest>(payload.GetRawText())
                       ?? new PowerShellScriptRequest();
-        var logger = _loggerFactory?.CreateLogger(nameof(PowerShellCommand)) ?? Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
-        logger.LogDebug("PSCHandler test");
-        return new PowerShellCommand(request, logger);
+        //var logger = _loggerFactory.CreateLogger(nameof(PowerShellCommand));
+        return new PowerShellCommand(request, _logger);
     }
 
     public override ICommand Create(JsonElement payload) =>
         ((ICommandHandler<PowerShellCommand>)this).Create(payload);
 
-    public override void OnLoaded(IServiceProvider services)
-    {
-        _loggerFactory = (ILoggerFactory?)services.GetService(typeof(ILoggerFactory));
-    }
+    public override void OnLoaded(IServiceProvider services) { }
 }

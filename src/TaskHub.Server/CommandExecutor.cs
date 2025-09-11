@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using TaskHub.Abstractions;
 using Hangfire.Server;
 using Microsoft.Extensions.Logging;
+using Hangfire.Console;
 
 namespace TaskHub.Server;
 
@@ -16,7 +17,7 @@ public class CommandExecutor
     private readonly PluginManager _manager;
     private readonly IEnumerable<IResultPublisher> _publishers;
     private readonly ScriptsRepository _scripts;
-    private readonly ILogger<CommandExecutor> _logger;
+    private readonly ILoggerFactory _loggerFactory;
 
     private const int MaxHistoryEntries = 100;
     private readonly ConcurrentDictionary<string, List<ExecutedCommandResult>> _history = new();
@@ -26,17 +27,17 @@ public class CommandExecutor
 
     private readonly ConcurrentDictionary<string, string?> _callbacks = new();
 
-    public CommandExecutor(PluginManager manager, IEnumerable<IResultPublisher> publishers, ILogger<CommandExecutor> logger, ScriptsRepository scripts)
+    public CommandExecutor(PluginManager manager, IEnumerable<IResultPublisher> publishers, ILoggerFactory loggerFactory, ScriptsRepository scripts)
     {
         _manager = manager;
         _publishers = publishers;
-        _logger = logger;
+        _loggerFactory = loggerFactory;
         _scripts = scripts;
     }
 
     // Backwards-compatible overload used by some tests
-    public CommandExecutor(PluginManager manager, IEnumerable<IResultPublisher> publishers, ILogger<CommandExecutor> logger)
-        : this(manager, publishers, logger, new ScriptsRepository())
+    public CommandExecutor(PluginManager manager, IEnumerable<IResultPublisher> publishers, ILoggerFactory loggerFactory)
+        : this(manager, publishers, loggerFactory, new ScriptsRepository())
     {
     }
 
@@ -50,6 +51,7 @@ public class CommandExecutor
 
     private async Task<(OperationResult Result, string? Version)> ExecuteInternal(string command, JsonElement payload, CancellationToken token)
     {
+        var _logger = _loggerFactory.CreateLogger(command);
         var handler = _manager.GetHandler(command);
         if (handler == null)
         {
@@ -114,9 +116,11 @@ public class CommandExecutor
 
     public async Task<OperationResult> ExecuteChain(IEnumerable<string> commands, JsonElement payload, string? requestedBy, PerformContext context, CancellationToken token)
     {
+        var _logger = _loggerFactory.CreateLogger("CommandExecutor");
         var commandList = commands as string[] ?? commands.ToArray();
         var jobId = context?.BackgroundJob?.Id ?? Guid.NewGuid().ToString();
         _logger.LogInformation("Job {JobId} started for user {User} with commands {Commands}", jobId, requestedBy ?? "unknown", string.Join(", ", commandList));
+        context?.WriteLine($"[job:{jobId}] starting: {string.Join(", ", commandList)}");
 
         var originalPayload = payload;
         var current = NullElement; // previous command output; null for first command
@@ -131,9 +135,33 @@ public class CommandExecutor
             foreach (var item in finished)
             {
                 results.Add(item.Record);
+                try
+                {
+                    context?.WriteLine($"[{item.Record.Command}] result={item.Result.Result}");
+                }
+                catch { }
+                try
+                {
+                    var resText = item.Result.Result;
+                    if (!string.Equals(resText, "success", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(resText, "ok", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Latch the first failure to drive final status
+                        if (string.Equals(lastResult.Result, "success", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(lastResult.Result, "ok", StringComparison.OrdinalIgnoreCase))
+                        {
+                            lastResult = item.Result;
+                        }
+                    }
+                }
+                catch { }
             }
             var last = finished[^1];
-            lastResult = last.Result;
+            if (string.Equals(lastResult.Result, "success", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(lastResult.Result, "ok", StringComparison.OrdinalIgnoreCase))
+            {
+                lastResult = last.Result;
+            }
             current = last.Record.Output;
             running.Clear();
         }
@@ -162,11 +190,12 @@ public class CommandExecutor
                 await DrainAsync();
             }
 
+            context?.WriteLine($"[{command}] starting");
             running.Add(Task.Run(async () =>
             {
                 var ranAt = DateTimeOffset.UtcNow;
-                // Pass logger into handler execution; PerformContext is bound globally
-                var result = await handler.ExecuteAsync(merged, service, _logger, token);
+                var jobLogger = new JobConsoleLogger(_logger, context, command);
+                var result = await handler.ExecuteAsync(merged, service, jobLogger, token);
                 var output = result.Payload ?? NullElement;
                 return (new ExecutedCommandResult(command, ranAt, output, version), result);
             }, token));
@@ -196,8 +225,11 @@ public class CommandExecutor
         }
 
         _logger.LogInformation("Job {JobId} finished for user {User} with result {Result}", jobId, requestedBy ?? "unknown", lastResult.Result);
+        context?.WriteLine($"[job:{jobId}] finished: {lastResult.Result}");
 
-        if (!string.Equals(lastResult.Result, "success", StringComparison.OrdinalIgnoreCase))
+        var status = lastResult.Result?.ToLowerInvariant();
+        if (!string.Equals(status, "success", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(status, "ok", StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException(lastResult.Result);
         }
@@ -215,6 +247,7 @@ public class CommandExecutor
     // New API: execute per-item commands with individual payloads
 public async Task<OperationResult> ExecuteChain(IEnumerable<CommandItem> items, string? requestedBy, PerformContext context, CancellationToken token)
     {
+        var _logger = _loggerFactory.CreateLogger("CommandExecutor");
         var prevCtx = JobLogContext.Current;
         JobLogContext.Current = context;
         try
@@ -222,6 +255,7 @@ public async Task<OperationResult> ExecuteChain(IEnumerable<CommandItem> items, 
         var list = items as CommandItem[] ?? items.ToArray();
         var jobId = context?.BackgroundJob?.Id ?? Guid.NewGuid().ToString();
         _logger.LogInformation("Job {JobId} started for user {User} with commands {Commands}", jobId, requestedBy ?? "unknown", string.Join(", ", list.Select(i => i.Command)));
+        context?.WriteLine($"[job:{jobId}] starting: {string.Join(", ", list.Select(i => i.Command))}");
 
         JsonElement previous = NullElement;
         OperationResult lastResult = new OperationResult(null, "success");
@@ -235,9 +269,32 @@ public async Task<OperationResult> ExecuteChain(IEnumerable<CommandItem> items, 
             foreach (var item in finished)
             {
                 results.Add(item.Record);
+                try
+                {
+                    context?.WriteLine($"[{item.Record.Command}] result={item.Result.Result}");
+                }
+                catch { }
+                try
+                {
+                    var resText = item.Result.Result;
+                    if (!string.Equals(resText, "success", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(resText, "ok", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (string.Equals(lastResult.Result, "success", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(lastResult.Result, "ok", StringComparison.OrdinalIgnoreCase))
+                        {
+                            lastResult = item.Result;
+                        }
+                    }
+                }
+                catch { }
             }
             var last = finished[^1];
-            lastResult = last.Result;
+            if (string.Equals(lastResult.Result, "success", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(lastResult.Result, "ok", StringComparison.OrdinalIgnoreCase))
+            {
+                lastResult = last.Result;
+            }
             previous = last.Record.Output;
             running.Clear();
         }
@@ -282,10 +339,12 @@ public async Task<OperationResult> ExecuteChain(IEnumerable<CommandItem> items, 
                 await DrainAsync();
             }
 
+            context?.WriteLine($"[{item.Command}] starting");
             running.Add(Task.Run(async () =>
             {
                 var ranAt = DateTimeOffset.UtcNow;
-                var result = await handler.ExecuteAsync(merged, service, _logger, token);
+                var jobLogger = new JobConsoleLogger(_logger, context, item.Command);
+                var result = await handler.ExecuteAsync(merged, service, jobLogger, token);
                 var output = result.Payload ?? NullElement;
                 return (new ExecutedCommandResult(item.Command, ranAt, output, version), result);
             }, token));
@@ -312,8 +371,11 @@ public async Task<OperationResult> ExecuteChain(IEnumerable<CommandItem> items, 
         }
 
         _logger.LogInformation("Job {JobId} finished for user {User} with result {Result}", jobId, requestedBy ?? "unknown", lastResult.Result);
+        context?.WriteLine($"[job:{jobId}] finished: {lastResult.Result}");
 
-        if (!string.Equals(lastResult.Result, "success", StringComparison.OrdinalIgnoreCase))
+        var status2 = lastResult.Result?.ToLowerInvariant();
+        if (!string.Equals(status2, "success", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(status2, "ok", StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException(lastResult.Result);
         }
