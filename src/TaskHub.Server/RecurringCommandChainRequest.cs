@@ -1,7 +1,15 @@
 using System;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace TaskHub.Server;
 
-public record RecurringCommandChainRequest(string[] Commands, JsonElement Payload, string CronExpression, TimeSpan Delay, string? Signature = null, string? CallbackConnectionId = null);
+public class RecurringCommandChainRequest
+{
+    [JsonPropertyName("commands")] public CommandItem[] Commands { get; set; } = Array.Empty<CommandItem>();
+    public string CronExpression { get; set; } = "* * * * *";
+    public TimeSpan Delay { get; set; }
+    public string? Signature { get; set; }
+    public string? CallbackConnectionId { get; set; }
+}
 

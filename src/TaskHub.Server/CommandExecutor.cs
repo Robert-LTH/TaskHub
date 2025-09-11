@@ -58,7 +58,7 @@ public class CommandExecutor
 
         var service = _manager.GetService(handler.ServiceName);
         var effectivePayload = ResolvePayload(command, payload);
-        var result = await handler.ExecuteAsync(effectivePayload, service, token);
+        var result = await handler.ExecuteAsync(effectivePayload, service, _logger, token);
         var version = _manager.GetHandlerVersion(command);
         return (result, version);
     }
@@ -118,7 +118,8 @@ public class CommandExecutor
         var jobId = context?.BackgroundJob?.Id ?? Guid.NewGuid().ToString();
         _logger.LogInformation("Job {JobId} started for user {User} with commands {Commands}", jobId, requestedBy ?? "unknown", string.Join(", ", commandList));
 
-        var current = payload;
+        var originalPayload = payload;
+        var current = NullElement; // previous command output; null for first command
         var results = new List<ExecutedCommandResult>();
         OperationResult lastResult = new OperationResult(null, "success");
         var running = new List<Task<(ExecutedCommandResult Record, OperationResult Result)>>();
@@ -152,7 +153,8 @@ public class CommandExecutor
             }
 
             var service = _manager.GetService(handler.ServiceName);
-            var cmd = handler.Create(current);
+            var merged = BuildCommandPayload(command, originalPayload, current, lastResult);
+            var cmd = handler.Create(merged);
             var version = _manager.GetHandlerVersion(command);
 
             if (cmd.WaitForPrevious)
@@ -163,7 +165,8 @@ public class CommandExecutor
             running.Add(Task.Run(async () =>
             {
                 var ranAt = DateTimeOffset.UtcNow;
-                var result = await cmd.ExecuteAsync(service, token);
+                // Pass logger into handler execution; PerformContext is bound globally
+                var result = await handler.ExecuteAsync(merged, service, _logger, token);
                 var output = result.Payload ?? NullElement;
                 return (new ExecutedCommandResult(command, ranAt, output, version), result);
             }, token));
@@ -194,6 +197,11 @@ public class CommandExecutor
 
         _logger.LogInformation("Job {JobId} finished for user {User} with result {Result}", jobId, requestedBy ?? "unknown", lastResult.Result);
 
+        if (!string.Equals(lastResult.Result, "success", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(lastResult.Result);
+        }
+
         return lastResult;
     }
 
@@ -202,5 +210,189 @@ public class CommandExecutor
     {
         using var doc = JsonDocument.Parse(string.IsNullOrEmpty(payloadJson) ? "null" : payloadJson);
         return await ExecuteChain(commands, doc.RootElement, requestedBy, context, token);
+    }
+
+    // New API: execute per-item commands with individual payloads
+public async Task<OperationResult> ExecuteChain(IEnumerable<CommandItem> items, string? requestedBy, PerformContext context, CancellationToken token)
+    {
+        var prevCtx = JobLogContext.Current;
+        JobLogContext.Current = context;
+        try
+        {
+        var list = items as CommandItem[] ?? items.ToArray();
+        var jobId = context?.BackgroundJob?.Id ?? Guid.NewGuid().ToString();
+        _logger.LogInformation("Job {JobId} started for user {User} with commands {Commands}", jobId, requestedBy ?? "unknown", string.Join(", ", list.Select(i => i.Command)));
+
+        JsonElement previous = NullElement;
+        OperationResult lastResult = new OperationResult(null, "success");
+        var results = new List<ExecutedCommandResult>();
+        var running = new List<Task<(ExecutedCommandResult Record, OperationResult Result)>>();
+
+        async Task DrainAsync()
+        {
+            if (running.Count == 0) return;
+            var finished = await Task.WhenAll(running);
+            foreach (var item in finished)
+            {
+                results.Add(item.Record);
+            }
+            var last = finished[^1];
+            lastResult = last.Result;
+            previous = last.Record.Output;
+            running.Clear();
+        }
+
+        foreach (var item in list)
+        {
+            var handler = _manager.GetHandler(item.Command);
+            if (handler == null)
+            {
+                await DrainAsync();
+                var ranAtMissing = DateTimeOffset.UtcNow;
+                var missing = new ExecutedCommandResult(item.Command, ranAtMissing, NullElement, null);
+                results.Add(missing);
+                lastResult = new OperationResult(null, $"Handler {item.Command} not found.");
+                previous = NullElement;
+                continue;
+            }
+
+            var service = _manager.GetService(handler.ServiceName);
+            JsonElement payloadElement;
+            try
+            {
+                if (item.Payload is JsonElement je)
+                {
+                    payloadElement = je;
+                }
+                else
+                {
+                    payloadElement = JsonSerializer.SerializeToElement(item.Payload ?? new object());
+                }
+            }
+            catch
+            {
+                payloadElement = NullElement;
+            }
+            var merged = BuildCommandPayload(item.Command, payloadElement, previous, lastResult);
+            var cmd = handler.Create(merged);
+            var version = _manager.GetHandlerVersion(item.Command);
+
+            if (cmd.WaitForPrevious)
+            {
+                await DrainAsync();
+            }
+
+            running.Add(Task.Run(async () =>
+            {
+                var ranAt = DateTimeOffset.UtcNow;
+                var result = await handler.ExecuteAsync(merged, service, _logger, token);
+                var output = result.Payload ?? NullElement;
+                return (new ExecutedCommandResult(item.Command, ranAt, output, version), result);
+            }, token));
+        }
+
+        await DrainAsync();
+
+        _history[jobId] = results;
+        _historyOrder.Enqueue(jobId);
+        while (_historyOrder.Count > MaxHistoryEntries && _historyOrder.TryDequeue(out var oldId))
+        {
+            _history.TryRemove(oldId, out _);
+        }
+
+        var statusResult = new CommandStatusResult(jobId, lastResult.Result, results.ToArray());
+        var callbackId = GetCallback(jobId);
+        foreach (var publisher in _publishers)
+        {
+            try
+            {
+                await publisher.PublishResultAsync(statusResult, callbackId, token);
+            }
+            catch { }
+        }
+
+        _logger.LogInformation("Job {JobId} finished for user {User} with result {Result}", jobId, requestedBy ?? "unknown", lastResult.Result);
+
+        if (!string.Equals(lastResult.Result, "success", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(lastResult.Result);
+        }
+
+        return lastResult;
+    }
+        finally
+        {
+            JobLogContext.Current = prevCtx;
+        }
+    }
+
+    // Stringified variant for background job serialization safety
+public async Task<OperationResult> ExecuteChain(string itemsJson, string? requestedBy, PerformContext context, CancellationToken token)
+    {
+        var prevCtx = JobLogContext.Current;
+        JobLogContext.Current = context;
+        try
+        {
+            using var doc = JsonDocument.Parse(string.IsNullOrEmpty(itemsJson) ? "[]" : itemsJson);
+            var items = doc.RootElement.Deserialize<CommandItem[]>() ?? Array.Empty<CommandItem>();
+            return await ExecuteChain(items, requestedBy, context, token);
+        }
+        catch
+        {
+            return new OperationResult(null, "invalid-items-json");
+        }
+        finally
+        {
+            JobLogContext.Current = prevCtx;
+        }
+    }
+
+    private JsonElement BuildCommandPayload(string command, JsonElement originalPayload, JsonElement previousOutput, OperationResult lastResult)
+    {
+        try
+        {
+            // Resolve any command-specific transformations (e.g., scriptId for powershell)
+            var basePayload = ResolvePayload(command, originalPayload);
+
+            object? prevObj = null;
+            try
+            {
+                if (previousOutput.ValueKind != JsonValueKind.Undefined)
+                {
+                    prevObj = JsonSerializer.Deserialize<object?>(previousOutput.GetRawText());
+                }
+            }
+            catch
+            {
+                prevObj = null;
+            }
+
+            if (basePayload.ValueKind == JsonValueKind.Object)
+            {
+                var dict = JsonSerializer.Deserialize<Dictionary<string, object?>>(basePayload.GetRawText()) ?? new Dictionary<string, object?>();
+                dict["previousOutput"] = prevObj;
+                dict["previousResult"] = lastResult.Result;
+                var json = JsonSerializer.SerializeToUtf8Bytes(dict);
+                using var newDoc = JsonDocument.Parse(json);
+                return newDoc.RootElement.Clone();
+            }
+            else
+            {
+                var wrapper = new Dictionary<string, object?>
+                {
+                    ["value"] = JsonSerializer.Deserialize<object?>(basePayload.GetRawText()),
+                    ["previousOutput"] = prevObj,
+                    ["previousResult"] = lastResult.Result,
+                };
+                var json = JsonSerializer.SerializeToUtf8Bytes(wrapper);
+                using var newDoc = JsonDocument.Parse(json);
+                return newDoc.RootElement.Clone();
+            }
+        }
+        catch
+        {
+            // On any failure, fall back to original payload to avoid breaking commands
+            return originalPayload;
+        }
     }
 }

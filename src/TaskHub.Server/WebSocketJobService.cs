@@ -103,21 +103,22 @@ public class WebSocketJobService : BackgroundService, IResultPublisher
                     var request = JsonSerializer.Deserialize<CommandChainRequest>(message);
                     if (request != null)
                     {
-                        if (_verifier.Verify(request.Payload, request.Signature))
+                        var verifyElement = JsonSerializer.SerializeToElement(request.Commands);
+                        if (_verifier.Verify(verifyElement, request.Signature))
                         {
                             var requestedBy = request.RequestedBy;
                             string jobId;
-                            var payloadJson = request.Payload.GetRawText();
+                            var itemsJson = JsonSerializer.Serialize(request.Commands);
                             if (request.Delay.HasValue)
                             {
-                                jobId = _client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, payloadJson, requestedBy, null!, CancellationToken.None), request.Delay.Value);
+                                jobId = _client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, null!, CancellationToken.None), request.Delay.Value);
                             }
                             else
                             {
-                                jobId = _client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(request.Commands, payloadJson, requestedBy, null!, CancellationToken.None));
+                                jobId = _client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, null!, CancellationToken.None));
                             }
                             _executor.SetCallback(jobId, request.CallbackConnectionId);
-                            _logger.LogInformation("WebSocket user {User} scheduled job {JobId} for commands {Commands}", requestedBy ?? "unknown", jobId, request.Commands);
+                            _logger.LogInformation("WebSocket user {User} scheduled job {JobId} for commands {Commands}", requestedBy ?? "unknown", jobId, string.Join(", ", System.Linq.Enumerable.Select(request.Commands, c => c.Command)));
                         }
                         else
                         {

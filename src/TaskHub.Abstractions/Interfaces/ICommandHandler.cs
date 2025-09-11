@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace TaskHub.Abstractions;
 
@@ -16,6 +17,7 @@ public interface ICommandHandler
     Task<OperationResult> ExecuteAsync(
         JsonElement payload,
         IServicePlugin service,
+        ILogger logger,
         CancellationToken cancellationToken);
 }
 

@@ -82,7 +82,7 @@ public class CommandModifyTests
         var createReq = new HttpRequestMessage(HttpMethod.Post, "/commands");
         createReq.Headers.Add("Test-Auth", "1");
         createReq.Headers.Add("Test-Role", "CommandExecutor");
-        createReq.Content = JsonContent.Create(new { commands = new[] { "cmd1" }, payload = new { }, delay = TimeSpan.FromMinutes(1) });
+        createReq.Content = JsonContent.Create(new { commands = new[] { new { command = "cmd1", payload = new { } } }, delay = TimeSpan.FromMinutes(1) });
         var createRes = await client.SendAsync(createReq);
         createRes.EnsureSuccessStatusCode();
         var created = await createRes.Content.ReadFromJsonAsync<EnqueuedCommandResult>();
@@ -91,7 +91,7 @@ public class CommandModifyTests
         var modifyReq = new HttpRequestMessage(HttpMethod.Put, $"/commands/{oldId}");
         modifyReq.Headers.Add("Test-Auth", "1");
         modifyReq.Headers.Add("Test-Role", "CommandExecutor");
-        modifyReq.Content = JsonContent.Create(new { commands = new[] { "cmd2" }, payload = new { }, delay = TimeSpan.FromMinutes(2) });
+        modifyReq.Content = JsonContent.Create(new { commands = new[] { new { command = "cmd2", payload = new { } } }, delay = TimeSpan.FromMinutes(2) });
         var modifyRes = await client.SendAsync(modifyReq);
         Assert.Equal(HttpStatusCode.OK, modifyRes.StatusCode);
         var modified = await modifyRes.Content.ReadFromJsonAsync<EnqueuedCommandResult>();

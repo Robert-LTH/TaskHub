@@ -7,15 +7,14 @@ namespace TaskHub.Server.Tests;
 
 public class RecurringCommandChainRequestTests
 {
-    private static readonly string[] Commands = new[] { "echo" };
+    private static readonly CommandItem[] Commands = new[] { new CommandItem("echo", JsonDocument.Parse("{}" ).RootElement) };
 
     [Fact]
     public void PropertiesAreSet()
     {
-        var payload = JsonDocument.Parse("{}").RootElement;
-        var request = new RecurringCommandChainRequest(Commands, payload, "* * * * *", TimeSpan.FromMinutes(1), CallbackConnectionId: "client1");
+        var request = new RecurringCommandChainRequest { Commands = Commands, CronExpression = "* * * * *", Delay = TimeSpan.FromMinutes(1), CallbackConnectionId = "client1" };
 
-        Assert.Equal(new[] { "echo" }, request.Commands);
+        Assert.Equal("echo", Assert.Single(request.Commands).Command);
         Assert.Equal("* * * * *", request.CronExpression);
         Assert.Equal(TimeSpan.FromMinutes(1), request.Delay);
         Assert.Null(request.Signature);

@@ -19,6 +19,8 @@ using Microsoft.AspNetCore.Authorization.Policy;
 using TaskHub.Abstractions;
 using TaskHub.Server;
 using NSwag.AspNetCore;
+using Hangfire.Console;
+using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,7 +29,7 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
-builder.Services.AddHangfire(config => config.UseMemoryStorage());
+builder.Services.AddHangfire(config => { config.UseConsole(); config.UseMemoryStorage(); });
 builder.Services.AddHangfireServer();
 builder.Services.AddHttpClient("msgraph").ConfigurePrimaryHttpMessageHandler(() =>
 {
@@ -39,7 +41,12 @@ builder.Services.AddHttpClient("msgraph").ConfigurePrimaryHttpMessageHandler(() 
     return handler;
 });
 
-builder.Services.AddLogging();
+// Mirror ILogger to Hangfire job console
+builder.Logging.AddProvider(new TaskHub.Server.PerformContextLoggerProvider());
+
+// Mirror Trace.Write/WriteLine into Hangfire job console when available
+Trace.Listeners.Add(new TaskHub.Server.PerformContextTraceListener());
+Trace.AutoFlush = true;
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
 builder.Services.AddSingleton<PluginManager>();
@@ -105,6 +112,16 @@ if (string.Equals(jobHandlingMode, "WebSocket", StringComparison.OrdinalIgnoreCa
     builder.Services.AddSingleton<WebSocketJobService>();
     builder.Services.AddSingleton<IResultPublisher>(sp => sp.GetRequiredService<WebSocketJobService>());
     builder.Services.AddHostedService(sp => sp.GetRequiredService<WebSocketJobService>());
+}
+
+// Pre-scan and register service plugins so handlers can inject them
+try
+{
+    var pluginsRoot = Path.Combine(AppContext.BaseDirectory, "plugins");
+    PluginCatalog.Register(builder.Services, builder.Configuration, pluginsRoot);
+}
+catch
+{
 }
 
 var app = builder.Build();

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Diagnostics;
 using System.Management.Automation;
 using System.Management.Automation.Runspaces;
 using TaskHub.Abstractions;
@@ -34,6 +35,54 @@ public class PowerShellServicePlugin : IServicePlugin
 
                 using var ps = System.Management.Automation.PowerShell.Create(initial);
 
+                // Log PowerShell stream events (errors, warnings, verbose, debug, information)
+                ps.Streams.Error.DataAdded += (s, e) =>
+                {
+                    try
+                    {
+                        var rec = ps.Streams.Error[e.Index];
+                        Trace.WriteLine($"[PS:Error] {rec}");
+                    }
+                    catch { }
+                };
+                ps.Streams.Warning.DataAdded += (s, e) =>
+                {
+                    try
+                    {
+                        var rec = ps.Streams.Warning[e.Index];
+                        Trace.WriteLine($"[PS:Warning] {rec}");
+                    }
+                    catch { }
+                };
+                ps.Streams.Verbose.DataAdded += (s, e) =>
+                {
+                    try
+                    {
+                        var rec = ps.Streams.Verbose[e.Index];
+                        Trace.WriteLine($"[PS:Verbose] {rec}");
+                    }
+                    catch { }
+                };
+                ps.Streams.Debug.DataAdded += (s, e) =>
+                {
+                    try
+                    {
+                        var rec = ps.Streams.Debug[e.Index];
+                        Trace.WriteLine($"[PS:Debug] {rec}");
+                    }
+                    catch { }
+                };
+                ps.Streams.Information.DataAdded += (s, e) =>
+                {
+                    try
+                    {
+                        var rec = ps.Streams.Information[e.Index];
+                        var msg = rec?.MessageData?.ToString() ?? rec?.ToString();
+                        if (!string.IsNullOrEmpty(msg)) Trace.WriteLine($"[PS:Info] {msg}");
+                    }
+                    catch { }
+                };
+
                 if (!string.IsNullOrEmpty(version))
                 {
                     var engineVersion = ps.Runspace.Version.ToString();
@@ -55,7 +104,12 @@ public class PowerShellServicePlugin : IServicePlugin
                 var output = new List<object?>();
                 foreach (var item in results)
                 {
-                    output.Add(item?.BaseObject);
+                    var line = item?.BaseObject;
+                    if (line != null)
+                    {
+                        Trace.WriteLine($"[PS:Output] {line}");
+                    }
+                    output.Add(line);
                 }
                 var element = JsonSerializer.SerializeToElement(output);
                 return new OperationResult(element, "success");

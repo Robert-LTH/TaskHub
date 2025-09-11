@@ -36,7 +36,44 @@ public class PluginManager
         var config = _provider.GetRequiredService<IConfiguration>();
         var loadAll = config.GetValue<bool>("PluginSettings:LoadAll");
         var serviceRoot = Path.Combine(root, "services");
-        if (Directory.Exists(serviceRoot))
+        var preferNames = new HashSet<string>(StringComparer.Ordinal) { "TaskHub.Abstractions" };
+        var serviceAssemblyNames = new HashSet<string>(StringComparer.Ordinal);
+        // If services were preloaded via PluginCatalog, reuse them and skip scanning
+        if (PluginCatalog.Services.Count > 0)
+        {
+            foreach (var kv in PluginCatalog.Services)
+            {
+                // Prefer the equivalent type from the default load context if available
+                var resolvedType = TryResolveDefaultContextType(kv.Value.ServiceType) ?? kv.Value.ServiceType;
+                try
+                {
+                    var instance = (IServicePlugin)CreateInstanceWithFallback(resolvedType)!;
+                    // Check optional prerequisites
+                    if (instance is TaskHub.Abstractions.IPluginPrerequisites pre && !pre.ShouldLoad(_provider, out var reason))
+                    {
+                        _logger.LogInformation("Skipping service plugin {Type} due to prerequisites not met: {Reason}", resolvedType.FullName, reason ?? "unspecified");
+                        continue;
+                    }
+
+                    _services[instance.Name] = (resolvedType, kv.Value.Context, kv.Value.AssemblyPath, kv.Value.Version);
+                    _assemblies[kv.Value.AssemblyPath] = 0;
+
+                    var asmName = AssemblyName.GetAssemblyName(kv.Value.AssemblyPath).Name;
+                    if (!string.IsNullOrEmpty(asmName))
+                    {
+                        serviceAssemblyNames.Add(asmName!);
+                        preferNames.Add(asmName!);
+                    }
+
+                    _logger.LogInformation("Loaded service plugin {Name} v{Version} from {Path}", instance.Name, kv.Value.Version?.ToString() ?? string.Empty, kv.Value.AssemblyPath);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to activate preloaded service plugin type {Type}", kv.Value.ServiceType.FullName);
+                }
+            }
+        }
+        else if (Directory.Exists(serviceRoot))
         {
             foreach (var dir in Directory.GetDirectories(serviceRoot))
             {
@@ -52,7 +89,7 @@ public class PluginManager
                     var pluginDir = GetLatestVersionDirectory(dir);
                     var dll = Directory.GetFiles(pluginDir, $"{Path.GetFileName(dir)}.dll", SearchOption.TopDirectoryOnly).FirstOrDefault();
                     if (dll == null) continue;
-                    var context = new PluginLoadContext(dll);
+                    var context = new PluginLoadContext(dll, preferNames);
                     var asm = context.LoadFromAssemblyPath(dll);
                     var spiName = typeof(IServicePlugin).FullName;
                     var type = asm.GetTypes().FirstOrDefault(t => !t.IsAbstract &&
@@ -61,7 +98,7 @@ public class PluginManager
                     {
                         // Prefer the equivalent type from the default load context if available
                         var resolvedType = TryResolveDefaultContextType(type) ?? type;
-                        var instance = ActivatorUtilities.CreateInstance(_provider, resolvedType)!;
+                        var instance = CreateInstanceWithFallback(resolvedType)!;
                         // Check optional prerequisites
                         if (instance is TaskHub.Abstractions.IPluginPrerequisites pre && !pre.ShouldLoad(_provider, out var reason))
                         {
@@ -73,6 +110,17 @@ public class PluginManager
                         var version = GetDirectoryVersion(pluginDir);
                         _services[plugin.Name] = (resolvedType, context, dll, version);
                         _assemblies[dll] = 0;
+                        // Track assembly simple name to prefer it for handlers
+                        try
+                        {
+                            var asmName = AssemblyName.GetAssemblyName(dll).Name;
+                            if (!string.IsNullOrEmpty(asmName))
+                            {
+                                serviceAssemblyNames.Add(asmName!);
+                                preferNames.Add(asmName!);
+                            }
+                        }
+                        catch { }
                         _logger.LogInformation("Loaded service plugin {Name} v{Version} from {Path}", plugin.Name, version?.ToString() ?? string.Empty, dll);
                     }
                 }
@@ -105,7 +153,8 @@ public class PluginManager
                         _logger.LogWarning("Handler plugin folder {Folder} missing expected dll {Dll}", pluginDir, expectedDll);
                         continue;
                     }
-                    var context = new PluginLoadContext(dll);
+                    // Prefer already loaded service plugin assemblies so handler and service share types
+                    var context = new PluginLoadContext(dll, preferNames.Concat(serviceAssemblyNames));
                     var asm = context.LoadFromAssemblyPath(dll);
                     var ichName = typeof(ICommandHandler).FullName;
                     var ichGenericName = typeof(ICommandHandler<>).FullName;
@@ -119,7 +168,7 @@ public class PluginManager
                     }
                     // Prefer the equivalent type from the default load context if available
                     var resolvedType = TryResolveDefaultContextType(type) ?? type;
-                    var handlerInstance = ActivatorUtilities.CreateInstance(_provider, resolvedType)!;
+                    var handlerInstance = CreateHandlerInstance(resolvedType)!;
                     if (handlerInstance is TaskHub.Abstractions.IPluginPrerequisites pre && !pre.ShouldLoad(_provider, out var reason))
                     {
                         _logger.LogInformation("Skipping handler plugin {Type} due to prerequisites not met: {Reason}", resolvedType.FullName, reason ?? "unspecified");
@@ -199,7 +248,7 @@ public class PluginManager
     {
         if (_handlers.TryGetValue(name, out var value))
         {
-            return (ICommandHandler)ActivatorUtilities.CreateInstance(_provider, value.HandlerType)!;
+            return (ICommandHandler)CreateHandlerInstance(value.HandlerType)!;
         }
 
         return null;
@@ -209,10 +258,93 @@ public class PluginManager
     {
         if (_services.TryGetValue(name, out var value))
         {
-            return (IServicePlugin)ActivatorUtilities.CreateInstance(_provider, value.ServiceType)!;
+            return (IServicePlugin)CreateInstanceWithFallback(value.ServiceType)!;
         }
 
         throw new InvalidOperationException($"Service plugin {name} not loaded");
+    }
+
+    private object? CreateInstanceWithFallback(Type type)
+    {
+        try
+        {
+            return ActivatorUtilities.CreateInstance(_provider, type);
+        }
+        catch (InvalidOperationException)
+        {
+            // Fall back to parameterless construction if DI cannot satisfy dependencies
+            var ctor = type.GetConstructor(Type.EmptyTypes);
+            if (ctor != null)
+            {
+                return Activator.CreateInstance(type);
+            }
+            throw; // rethrow if no suitable fallback
+        }
+    }
+
+    // Handlers sometimes (incorrectly) inject concrete service plugin types.
+    // To improve compatibility, try to satisfy such constructor parameters by
+    // providing instances of the loaded service plugins as explicit arguments.
+    private object? CreateHandlerInstance(Type handlerType)
+    {
+        try
+        {
+            return ActivatorUtilities.CreateInstance(_provider, handlerType);
+        }
+        catch (InvalidOperationException)
+        {
+            // Build a candidate extras bag with instances for any constructor
+            // parameter that matches a loaded service plugin type.
+            var extras = new List<object>();
+
+            // Collect distinct parameter types across constructors to avoid duplicates
+            var paramTypes = handlerType.GetConstructors()
+                .SelectMany(c => c.GetParameters().Select(p => p.ParameterType))
+                .Distinct()
+                .ToArray();
+
+            foreach (var pType in paramTypes)
+            {
+                // Find a loaded service plugin whose concrete type matches this parameter
+                var match = _services.Values.FirstOrDefault(s => pType.IsAssignableFrom(s.ServiceType));
+                if (match.ServiceType != null)
+                {
+                    try
+                    {
+                        var svcInstance = CreateInstanceWithFallback(match.ServiceType);
+                        if (svcInstance != null)
+                        {
+                            extras.Add(svcInstance);
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore and continue; DI may still resolve via other means
+                    }
+                }
+            }
+
+            if (extras.Count > 0)
+            {
+                try
+                {
+                    return ActivatorUtilities.CreateInstance(_provider, handlerType, extras.ToArray());
+                }
+                catch (InvalidOperationException)
+                {
+                    // Fall through to final fallback
+                }
+            }
+
+            // Final fallback: parameterless ctor if present
+            var ctor = handlerType.GetConstructor(Type.EmptyTypes);
+            if (ctor != null)
+            {
+                return Activator.CreateInstance(handlerType);
+            }
+            // Rethrow the original style of failure for clarity
+            return ActivatorUtilities.CreateInstance(_provider, handlerType);
+        }
     }
 
     private static IReadOnlyList<CommandInput> DescribeInputs(Type handlerType)
