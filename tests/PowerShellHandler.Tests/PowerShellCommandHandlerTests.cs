@@ -14,7 +14,7 @@ public class PowerShellCommandHandlerTests
     public void CommandsIncludePowerShellScript()
     {
         var plugin = new PowerShellServicePlugin.PowerShellServicePlugin();
-        var handler = new PowerShellCommandHandler(plugin);
+        var handler = new PowerShellCommandHandler();
         Assert.Contains("powershell-script", handler.Commands);
         Assert.Equal("powershell", handler.ServiceName);
     }
@@ -23,7 +23,7 @@ public class PowerShellCommandHandlerTests
     public async Task ExecutesScript()
     {
         var plugin = new PowerShellServicePlugin.PowerShellServicePlugin();
-        var handler = new PowerShellCommandHandler(plugin);
+        var handler = new PowerShellCommandHandler();
         var request = new PowerShellScriptRequest { Script = "Write-Output 5" };
         var payload = JsonSerializer.SerializeToElement(request);
 

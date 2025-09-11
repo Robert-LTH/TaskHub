@@ -8,12 +8,7 @@ namespace PowerShellHandler;
 
 public class PowerShellCommandHandler : CommandHandlerBase, ICommandHandler<PowerShellCommand>
 {
-    private readonly IServicePlugin _service;
-
-    public PowerShellCommandHandler(PowerShellServicePlugin.PowerShellServicePlugin service)
-    {
-        _service = service;
-    }
+    public PowerShellCommandHandler() { }
 
     public override IReadOnlyCollection<string> Commands => new[] { "powershell-script" };
     public override string ServiceName => "powershell";
@@ -22,7 +17,7 @@ public class PowerShellCommandHandler : CommandHandlerBase, ICommandHandler<Powe
     {
         var request = JsonSerializer.Deserialize<PowerShellScriptRequest>(payload.GetRawText())
                       ?? new PowerShellScriptRequest();
-        return new PowerShellCommand(_service, request);
+        return new PowerShellCommand(request);
     }
 
     public override ICommand Create(JsonElement payload) =>
