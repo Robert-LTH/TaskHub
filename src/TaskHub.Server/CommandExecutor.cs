@@ -6,9 +6,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using TaskHub.Abstractions;
-using Hangfire.Server;
 using Microsoft.Extensions.Logging;
-using Hangfire.Console;
 
 namespace TaskHub.Server;
 
@@ -125,13 +123,12 @@ public class CommandExecutor
         return result;
     }
 
-    public async Task<OperationResult> ExecuteChain(IEnumerable<string> commands, JsonElement payload, string? requestedBy, PerformContext context, CancellationToken token)
+    public async Task<OperationResult> ExecuteChain(IEnumerable<string> commands, JsonElement payload, string? requestedBy, CancellationToken token)
     {
         var _logger = _loggerFactory.CreateLogger("CommandExecutor");
         var commandList = commands as string[] ?? commands.ToArray();
-        var jobId = context?.BackgroundJob?.Id ?? Guid.NewGuid().ToString();
+        var jobId = Guid.NewGuid().ToString();
         _logger.LogInformation("Job {JobId} started for user {User} with commands {Commands}", jobId, requestedBy ?? "unknown", string.Join(", ", commandList));
-        context?.WriteLine($"[job:{jobId}] starting: {string.Join(", ", commandList)}");
 
         var originalPayload = payload;
         var current = NullElement; // previous command output; null for first command
@@ -146,11 +143,6 @@ public class CommandExecutor
             foreach (var item in finished)
             {
                 results.Add(item.Record);
-                try
-                {
-                    context?.WriteLine($"[{item.Record.Command}] result={item.Result.Result}");
-                }
-                catch { }
                 try
                 {
                     var resText = item.Result.Result;
@@ -201,11 +193,10 @@ public class CommandExecutor
                 await DrainAsync();
             }
 
-            context?.WriteLine($"[{command}] starting");
             running.Add(Task.Run(async () =>
             {
                 var ranAt = DateTimeOffset.UtcNow;
-                var jobLogger = new JobConsoleLogger(_logger, context, command, jobId, _logStore, _logPublishers, LookupCallback);
+                var jobLogger = new JobConsoleLogger(_logger, command, jobId, _logStore, _logPublishers, LookupCallback);
                 var result = await handler.ExecuteAsync(merged, service, jobLogger, token);
                 var output = result.Payload ?? NullElement;
                 return (new ExecutedCommandResult(command, ranAt, output, version), result);
@@ -236,7 +227,6 @@ public class CommandExecutor
         }
 
         _logger.LogInformation("Job {JobId} finished for user {User} with result {Result}", jobId, requestedBy ?? "unknown", lastResult.Result);
-        context?.WriteLine($"[job:{jobId}] finished: {lastResult.Result}");
 
         var status = lastResult.Result?.ToLowerInvariant();
         if (!string.Equals(status, "success", StringComparison.OrdinalIgnoreCase) &&
@@ -249,24 +239,19 @@ public class CommandExecutor
     }
 
     // Overload that accepts JSON text to ensure payload survives background job serialization.
-    public async Task<OperationResult> ExecuteChain(IEnumerable<string> commands, string payloadJson, string? requestedBy, PerformContext context, CancellationToken token)
+    public async Task<OperationResult> ExecuteChain(IEnumerable<string> commands, string payloadJson, string? requestedBy, CancellationToken token)
     {
         using var doc = JsonDocument.Parse(string.IsNullOrEmpty(payloadJson) ? "null" : payloadJson);
-        return await ExecuteChain(commands, doc.RootElement, requestedBy, context, token);
+        return await ExecuteChain(commands, doc.RootElement, requestedBy, token);
     }
 
     // New API: execute per-item commands with individual payloads
-public async Task<OperationResult> ExecuteChain(IEnumerable<CommandItem> items, string? requestedBy, PerformContext context, CancellationToken token)
+    public async Task<OperationResult> ExecuteChain(IEnumerable<CommandItem> items, string? requestedBy, CancellationToken token)
     {
         var _logger = _loggerFactory.CreateLogger("CommandExecutor");
-        var prevCtx = JobLogContext.Current;
-        JobLogContext.Current = context;
-        try
-        {
         var list = items as CommandItem[] ?? items.ToArray();
-        var jobId = context?.BackgroundJob?.Id ?? Guid.NewGuid().ToString();
+        var jobId = Guid.NewGuid().ToString();
         _logger.LogInformation("Job {JobId} started for user {User} with commands {Commands}", jobId, requestedBy ?? "unknown", string.Join(", ", list.Select(i => i.Command)));
-        context?.WriteLine($"[job:{jobId}] starting: {string.Join(", ", list.Select(i => i.Command))}");
 
         JsonElement previous = NullElement;
         OperationResult lastResult = new OperationResult(null, "success");
@@ -280,11 +265,6 @@ public async Task<OperationResult> ExecuteChain(IEnumerable<CommandItem> items, 
             foreach (var item in finished)
             {
                 results.Add(item.Record);
-                try
-                {
-                    context?.WriteLine($"[{item.Record.Command}] result={item.Result.Result}");
-                }
-                catch { }
                 try
                 {
                     var resText = item.Result.Result;
@@ -350,11 +330,10 @@ public async Task<OperationResult> ExecuteChain(IEnumerable<CommandItem> items, 
                 await DrainAsync();
             }
 
-            context?.WriteLine($"[{item.Command}] starting");
             running.Add(Task.Run(async () =>
             {
                 var ranAt = DateTimeOffset.UtcNow;
-                var jobLogger = new JobConsoleLogger(_logger, context, item.Command, jobId, _logStore, _logPublishers, LookupCallback);
+                var jobLogger = new JobConsoleLogger(_logger, item.Command, jobId, _logStore, _logPublishers, LookupCallback);
                 var result = await handler.ExecuteAsync(merged, service, jobLogger, token);
                 var output = result.Payload ?? NullElement;
                 return (new ExecutedCommandResult(item.Command, ranAt, output, version), result);
@@ -382,7 +361,6 @@ public async Task<OperationResult> ExecuteChain(IEnumerable<CommandItem> items, 
         }
 
         _logger.LogInformation("Job {JobId} finished for user {User} with result {Result}", jobId, requestedBy ?? "unknown", lastResult.Result);
-        context?.WriteLine($"[job:{jobId}] finished: {lastResult.Result}");
 
         var status2 = lastResult.Result?.ToLowerInvariant();
         if (!string.Equals(status2, "success", StringComparison.OrdinalIgnoreCase) &&
@@ -393,30 +371,19 @@ public async Task<OperationResult> ExecuteChain(IEnumerable<CommandItem> items, 
 
         return lastResult;
     }
-        finally
-        {
-            JobLogContext.Current = prevCtx;
-        }
-    }
 
     // Stringified variant for background job serialization safety
-public async Task<OperationResult> ExecuteChain(string itemsJson, string? requestedBy, PerformContext context, CancellationToken token)
+    public async Task<OperationResult> ExecuteChain(string itemsJson, string? requestedBy, CancellationToken token)
     {
-        var prevCtx = JobLogContext.Current;
-        JobLogContext.Current = context;
         try
         {
             using var doc = JsonDocument.Parse(string.IsNullOrEmpty(itemsJson) ? "[]" : itemsJson);
             var items = doc.RootElement.Deserialize<CommandItem[]>() ?? Array.Empty<CommandItem>();
-            return await ExecuteChain(items, requestedBy, context, token);
+            return await ExecuteChain(items, requestedBy, token);
         }
         catch
         {
             return new OperationResult(null, "invalid-items-json");
-        }
-        finally
-        {
-            JobLogContext.Current = prevCtx;
         }
     }
 
