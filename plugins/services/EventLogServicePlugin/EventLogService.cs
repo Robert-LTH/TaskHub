@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using TaskHub.Abstractions;
@@ -39,6 +41,37 @@ public class EventLogServicePlugin : IServicePlugin
             catch (Exception ex)
             {
                 return new OperationResult(null, $"Failed to write event: {ex.Message}");
+            }
+        }
+
+        public OperationResult Read(string logName = "Application", string? xpath = null)
+        {
+            try
+            {
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    return new OperationResult(null, "EventLog is only supported on Windows");
+                }
+
+                var events = new List<string>();
+                EventLogQuery query = xpath is null
+                    ? new EventLogQuery(logName, PathType.LogName)
+                    : new EventLogQuery(logName, PathType.LogName, xpath);
+
+                using EventLogReader reader = new EventLogReader(query);
+                for (EventRecord? record = reader.ReadEvent(); record != null; record = reader.ReadEvent())
+                {
+                    using (record)
+                    {
+                        events.Add(record.ToXml());
+                    }
+                }
+
+                return new OperationResult(JsonSerializer.SerializeToElement(events), "success");
+            }
+            catch (Exception ex)
+            {
+                return new OperationResult(null, $"Failed to read event log: {ex.Message}");
             }
         }
     }
