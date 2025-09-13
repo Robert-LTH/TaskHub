@@ -18,6 +18,8 @@ public class CommandExecutor
     private readonly IEnumerable<IResultPublisher> _publishers;
     private readonly ScriptsRepository _scripts;
     private readonly ILoggerFactory _loggerFactory;
+    private readonly IJobLogStore _logStore;
+    private readonly IEnumerable<ILogPublisher> _logPublishers;
 
     private const int MaxHistoryEntries = 100;
     private readonly ConcurrentDictionary<string, List<ExecutedCommandResult>> _history = new();
@@ -27,22 +29,31 @@ public class CommandExecutor
 
     private readonly ConcurrentDictionary<string, string?> _callbacks = new();
 
-    public CommandExecutor(PluginManager manager, IEnumerable<IResultPublisher> publishers, ILoggerFactory loggerFactory, ScriptsRepository scripts)
+    public CommandExecutor(PluginManager manager, IEnumerable<IResultPublisher> publishers, ILoggerFactory loggerFactory,
+        ScriptsRepository scripts, IJobLogStore logStore, IEnumerable<ILogPublisher> logPublishers)
     {
         _manager = manager;
         _publishers = publishers;
         _loggerFactory = loggerFactory;
         _scripts = scripts;
+        _logStore = logStore;
+        _logPublishers = logPublishers;
     }
 
-    // Backwards-compatible overload used by some tests
+    // Backwards-compatible overloads used by some tests
     public CommandExecutor(PluginManager manager, IEnumerable<IResultPublisher> publishers, ILoggerFactory loggerFactory)
-        : this(manager, publishers, loggerFactory, new ScriptsRepository())
+        : this(manager, publishers, loggerFactory, new ScriptsRepository(), new JobLogStore(), Array.Empty<ILogPublisher>())
+    {
+    }
+
+    public CommandExecutor(PluginManager manager, IEnumerable<IResultPublisher> publishers, ILoggerFactory loggerFactory, ScriptsRepository scripts)
+        : this(manager, publishers, loggerFactory, scripts, new JobLogStore(), Array.Empty<ILogPublisher>())
     {
     }
 
     public void SetCallback(string jobId, string? connectionId) => _callbacks[jobId] = connectionId;
     private string? GetCallback(string jobId) => _callbacks.TryRemove(jobId, out var id) ? id : null;
+    private string? LookupCallback(string jobId) => _callbacks.TryGetValue(jobId, out var id) ? id : null;
 
     public IReadOnlyList<ExecutedCommandResult>? GetHistory(string jobId)
     {
@@ -194,7 +205,7 @@ public class CommandExecutor
             running.Add(Task.Run(async () =>
             {
                 var ranAt = DateTimeOffset.UtcNow;
-                var jobLogger = new JobConsoleLogger(_logger, context, command);
+                var jobLogger = new JobConsoleLogger(_logger, context, command, jobId, _logStore, _logPublishers, LookupCallback);
                 var result = await handler.ExecuteAsync(merged, service, jobLogger, token);
                 var output = result.Payload ?? NullElement;
                 return (new ExecutedCommandResult(command, ranAt, output, version), result);
@@ -343,7 +354,7 @@ public async Task<OperationResult> ExecuteChain(IEnumerable<CommandItem> items, 
             running.Add(Task.Run(async () =>
             {
                 var ranAt = DateTimeOffset.UtcNow;
-                var jobLogger = new JobConsoleLogger(_logger, context, item.Command);
+                var jobLogger = new JobConsoleLogger(_logger, context, item.Command, jobId, _logStore, _logPublishers, LookupCallback);
                 var result = await handler.ExecuteAsync(merged, service, jobLogger, token);
                 var output = result.Payload ?? NullElement;
                 return (new ExecutedCommandResult(item.Command, ranAt, output, version), result);
