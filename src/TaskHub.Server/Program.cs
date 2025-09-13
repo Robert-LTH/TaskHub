@@ -55,6 +55,7 @@ builder.Services.AddSingleton<CommandExecutor>();
 builder.Services.AddSingleton<PayloadVerifier>();
 builder.Services.AddSingleton<ScriptsRepository>();
 builder.Services.AddSingleton<ScriptSignatureVerifier>();
+builder.Services.AddSingleton<IJobLogStore, JobLogStore>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApiDocument();
 builder.Services.AddSingleton<IReportingContainer, ReportingContainer>();
@@ -112,6 +113,7 @@ if (string.Equals(jobHandlingMode, "WebSocket", StringComparison.OrdinalIgnoreCa
 {
     builder.Services.AddSingleton<WebSocketJobService>();
     builder.Services.AddSingleton<IResultPublisher>(sp => sp.GetRequiredService<WebSocketJobService>());
+    builder.Services.AddSingleton<ILogPublisher>(sp => sp.GetRequiredService<WebSocketJobService>());
     builder.Services.AddHostedService(sp => sp.GetRequiredService<WebSocketJobService>());
 }
 

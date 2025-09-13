@@ -212,6 +212,13 @@ public static class CommandEndpoints
         }).RequireAuthorization("CommandExecutor")
           .Produces<CommandStatusResult>();
 
+        app.MapGet("/commands/{id}/logs", (string id, IJobLogStore store) =>
+        {
+            var logs = store.GetLogs(id);
+            return logs is null ? Results.NotFound() : Results.Ok(logs);
+        }).RequireAuthorization("CommandExecutor")
+          .Produces<string[]>();
+
         return app;
     }
 }

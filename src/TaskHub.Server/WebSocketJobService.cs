@@ -13,7 +13,7 @@ using TaskHub.Abstractions;
 
 namespace TaskHub.Server;
 
-public class WebSocketJobService : BackgroundService, IResultPublisher
+public class WebSocketJobService : BackgroundService, IResultPublisher, ILogPublisher
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<WebSocketJobService> _logger;
@@ -42,6 +42,19 @@ public class WebSocketJobService : BackgroundService, IResultPublisher
         };
         var json = JsonSerializer.Serialize(envelope);
         await _sendQueue.Writer.WriteAsync(json, token);
+    }
+
+    public void PublishLog(string jobId, string message, string? callbackConnectionId)
+    {
+        var envelope = new
+        {
+            type = "log",
+            jobId,
+            connectionId = callbackConnectionId,
+            message
+        };
+        var json = JsonSerializer.Serialize(envelope);
+        _sendQueue.Writer.TryWrite(json);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
