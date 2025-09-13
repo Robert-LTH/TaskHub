@@ -1,31 +1,27 @@
 using System;
 using System.Collections.Generic;
-using Hangfire.Console;
-using Hangfire.Server;
 using Microsoft.Extensions.Logging;
 using TaskHub.Abstractions;
 
 namespace TaskHub.Server;
 
 /// <summary>
-/// ILogger wrapper that forwards to an inner logger and mirrors
-/// messages into the Hangfire PerformContext console with an optional prefix.
+/// ILogger wrapper that forwards to an inner logger and records
+/// messages with an optional prefix.
 /// </summary>
 public sealed class JobConsoleLogger : ILogger
 {
     private readonly ILogger _inner;
-    private readonly PerformContext? _context;
     private readonly string _prefix;
     private readonly string _jobId;
     private readonly IJobLogStore _store;
     private readonly IEnumerable<ILogPublisher> _publishers;
     private readonly Func<string, string?> _callbackAccessor;
 
-    public JobConsoleLogger(ILogger inner, PerformContext? context, string? prefix, string jobId,
+    public JobConsoleLogger(ILogger inner, string? prefix, string jobId,
         IJobLogStore store, IEnumerable<ILogPublisher> publishers, Func<string, string?> callbackAccessor)
     {
         _inner = inner;
-        _context = context;
         _prefix = string.IsNullOrEmpty(prefix) ? string.Empty : prefix + " ";
         _jobId = jobId;
         _store = store;
@@ -55,33 +51,7 @@ public sealed class JobConsoleLogger : ILogger
         }
         catch { }
 
-        // Mirror to Hangfire console when available
-        if (_context == null) return;
-        try
-        {
-            var color = logLevel switch
-            {
-                LogLevel.Trace => ConsoleTextColor.Gray,
-                LogLevel.Debug => ConsoleTextColor.Gray,
-                LogLevel.Information => ConsoleTextColor.White,
-                LogLevel.Warning => ConsoleTextColor.Yellow,
-                LogLevel.Error => ConsoleTextColor.Red,
-                LogLevel.Critical => ConsoleTextColor.Magenta,
-                _ => ConsoleTextColor.White
-            };
-            _context.SetTextColor(color);
-            _context.WriteLine(fullMessage);
-            if (exception != null)
-            {
-                _context.SetTextColor(ConsoleTextColor.DarkRed);
-                _context.WriteLine(exception.ToString());
-            }
-            _context.ResetTextColor();
-        }
-        catch
-        {
-            // Never allow logging issues to affect jobs
-        }
+        // Logs are stored and published only; no console mirroring
     }
 }
 

@@ -54,7 +54,7 @@ public class CommandExecutorTests
         var executor = CreateExecutor(handlers, typeof(StubService));
         var payload = JsonDocument.Parse("{}").RootElement;
         var sw = Stopwatch.StartNew();
-        await executor.ExecuteChain(commands, payload, null, null!, CancellationToken.None);
+        await executor.ExecuteChain(commands, payload, null, CancellationToken.None);
         sw.Stop();
         Assert.True(sw.Elapsed < TimeSpan.FromMilliseconds(350));
     }
@@ -72,7 +72,7 @@ public class CommandExecutorTests
         var executor = CreateExecutor(handlers, typeof(StubService));
         var payload = JsonDocument.Parse("{}").RootElement;
         var sw = Stopwatch.StartNew();
-        await executor.ExecuteChain(commands, payload, null, null!, CancellationToken.None);
+        await executor.ExecuteChain(commands, payload, null, CancellationToken.None);
         sw.Stop();
         Assert.True(sw.Elapsed >= TimeSpan.FromMilliseconds(350));
     }

@@ -124,13 +124,12 @@ public class WebSocketJobService : BackgroundService, IResultPublisher, ILogPubl
                             var itemsJson = JsonSerializer.Serialize(request.Commands);
                             if (request.Delay.HasValue)
                             {
-                                jobId = _client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, null!, CancellationToken.None), request.Delay.Value);
+                                jobId = _client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, CancellationToken.None), request.Delay.Value);
                             }
                             else
                             {
-                                jobId = _client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, null!, CancellationToken.None));
+                                jobId = _client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, CancellationToken.None));
                             }
-                            _executor.SetCallback(jobId, request.CallbackConnectionId);
                             _logger.LogInformation("WebSocket user {User} scheduled job {JobId} for commands {Commands}", requestedBy ?? "unknown", jobId, string.Join(", ", System.Linq.Enumerable.Select(request.Commands, c => c.Command)));
                         }
                         else

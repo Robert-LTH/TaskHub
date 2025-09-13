@@ -19,19 +19,15 @@ using Microsoft.AspNetCore.Authorization.Policy;
 using TaskHub.Abstractions;
 using TaskHub.Server;
 using NSwag.AspNetCore;
-using Hangfire.Console;
-using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure logging to ensure plugin load messages are visible
 builder.Logging.ClearProviders();
-// Mirror ILogger to Hangfire job console
-builder.Logging.AddProvider(new TaskHub.Server.PerformContextLoggerProvider());
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
-builder.Services.AddHangfire(config => { config.UseConsole(); config.UseMemoryStorage(); });
+builder.Services.AddHangfire(config => { config.UseMemoryStorage(); });
 builder.Services.AddHangfireServer();
 builder.Services.AddHttpClient("msgraph").ConfigurePrimaryHttpMessageHandler(() =>
 {
@@ -45,9 +41,6 @@ builder.Services.AddHttpClient("msgraph").ConfigurePrimaryHttpMessageHandler(() 
 
 
 
-// Mirror Trace.Write/WriteLine into Hangfire job console when available
-Trace.Listeners.Add(new TaskHub.Server.PerformContextTraceListener());
-Trace.AutoFlush = true;
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
 builder.Services.AddSingleton<PluginManager>();

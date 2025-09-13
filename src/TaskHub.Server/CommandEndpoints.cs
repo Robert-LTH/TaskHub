@@ -65,13 +65,12 @@ public static class CommandEndpoints
             string jobId;
             if (delay.HasValue)
             {
-                jobId = client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, null!, CancellationToken.None), delay.Value);
+                jobId = client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, CancellationToken.None), delay.Value);
             }
             else
             {
-                jobId = client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, null!, CancellationToken.None));
+                jobId = client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, CancellationToken.None));
             }
-            executor.SetCallback(jobId, callbackId);
             logger.LogInformation("User {User} scheduled job {JobId}", requestedBy, jobId);
             var enqueueTime = DateTimeOffset.UtcNow + (delay ?? TimeSpan.Zero);
             return Results.Ok(new EnqueuedCommandResult(jobId, Array.Empty<ExecutedCommandResult>(), enqueueTime));
@@ -121,11 +120,10 @@ public static class CommandEndpoints
             var itemsJson = commandsEl.GetRawText();
             client.Schedule(() => RecurringJob.AddOrUpdate<CommandExecutor>(
                 jobId,
-                exec => exec.ExecuteChain(itemsJson, requestedBy, null!, CancellationToken.None),
+                exec => exec.ExecuteChain(itemsJson, requestedBy, CancellationToken.None),
                 cron,
                 new RecurringJobOptions()),
                 delay);
-            executor.SetCallback(jobId, callbackId);
             logger.LogInformation("User {User} scheduled recurring job {JobId}", requestedBy, jobId);
             return Results.Ok(new EnqueuedCommandResult(jobId, Array.Empty<ExecutedCommandResult>(), DateTimeOffset.UtcNow.Add(delay)));
         }).RequireAuthorization("CommandExecutor")
@@ -179,14 +177,13 @@ public static class CommandEndpoints
             }
             if (delay.HasValue)
             {
-                jobId = client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(itemsJson2, requestedBy, null!, CancellationToken.None), delay.Value);
+                jobId = client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(itemsJson2, requestedBy, CancellationToken.None), delay.Value);
             }
             else
             {
-                jobId = client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(itemsJson2, requestedBy, null!, CancellationToken.None));
+                jobId = client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(itemsJson2, requestedBy, CancellationToken.None));
             }
             var callbackId = root.TryGetProperty("callbackConnectionId", out var cbEl) && cbEl.ValueKind == System.Text.Json.JsonValueKind.String ? cbEl.GetString() : null;
-            executor.SetCallback(jobId, callbackId);
             logger.LogInformation("User {User} modified job {OldJob} to new job {JobId}", requestedBy, id, jobId);
             var enqueueTime = DateTimeOffset.UtcNow + (delay ?? TimeSpan.Zero);
             return Results.Ok(new EnqueuedCommandResult(jobId, Array.Empty<ExecutedCommandResult>(), enqueueTime));
