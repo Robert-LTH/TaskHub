@@ -105,6 +105,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventLogServicePlugin", "pl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventLogServicePlugin.Tests", "tests/EventLogServicePlugin.Tests/EventLogServicePlugin.Tests.csproj", "{BA260BA3-3CDE-4093-B084-2FF498D33908}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PetStoreServicePlugin", "plugins/services/PetStoreServicePlugin/PetStoreServicePlugin.csproj", "{D04D0DB8-DFFF-4E0C-A84C-8906D7A40C0D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PetStoreHandler", "plugins/handlers/PetStoreHandler/PetStoreHandler.csproj", "{B666DCA7-BAF3-4356-A803-3F9C5C94303F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PetStoreHandler.Tests", "tests/PetStoreHandler.Tests/PetStoreHandler.Tests.csproj", "{7C2EA8AC-BE81-46B3-9B0E-C6CFC4F4143D}"
+EndProject
 Global
     GlobalSection(SolutionConfigurationPlatforms) = preSolution
         Debug|Any CPU = Debug|Any CPU
@@ -315,6 +321,18 @@ Global
         {BA260BA3-3CDE-4093-B084-2FF498D33908}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {BA260BA3-3CDE-4093-B084-2FF498D33908}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {BA260BA3-3CDE-4093-B084-2FF498D33908}.Release|Any CPU.Build.0 = Release|Any CPU
+        {D04D0DB8-DFFF-4E0C-A84C-8906D7A40C0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {D04D0DB8-DFFF-4E0C-A84C-8906D7A40C0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {D04D0DB8-DFFF-4E0C-A84C-8906D7A40C0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {D04D0DB8-DFFF-4E0C-A84C-8906D7A40C0D}.Release|Any CPU.Build.0 = Release|Any CPU
+        {B666DCA7-BAF3-4356-A803-3F9C5C94303F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {B666DCA7-BAF3-4356-A803-3F9C5C94303F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {B666DCA7-BAF3-4356-A803-3F9C5C94303F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {B666DCA7-BAF3-4356-A803-3F9C5C94303F}.Release|Any CPU.Build.0 = Release|Any CPU
+        {7C2EA8AC-BE81-46B3-9B0E-C6CFC4F4143D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {7C2EA8AC-BE81-46B3-9B0E-C6CFC4F4143D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {7C2EA8AC-BE81-46B3-9B0E-C6CFC4F4143D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {7C2EA8AC-BE81-46B3-9B0E-C6CFC4F4143D}.Release|Any CPU.Build.0 = Release|Any CPU
     EndGlobalSection
     GlobalSection(SolutionProperties) = preSolution
         HideSolutionNode = FALSE
