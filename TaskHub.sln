@@ -117,6 +117,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FakeRestHandler", "plugins/
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FakeRestHandler.Tests", "tests/FakeRestHandler.Tests/FakeRestHandler.Tests.csproj", "{DE0C697B-A2AC-45E5-BC3B-74D9BD23FECC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BinanceServicePlugin", "plugins/services/BinanceServicePlugin/BinanceServicePlugin.csproj", "{1E6EA56D-69FE-4CD0-BFE1-C186C1BD3BFC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BinanceHandler", "plugins/handlers/BinanceHandler/BinanceHandler.csproj", "{EAFD6265-DE4D-4F00-9309-CF0363A8ACD3}"
+EndProject
 Global
     GlobalSection(SolutionConfigurationPlatforms) = preSolution
         Debug|Any CPU = Debug|Any CPU
@@ -351,6 +355,14 @@ Global
         {DE0C697B-A2AC-45E5-BC3B-74D9BD23FECC}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {DE0C697B-A2AC-45E5-BC3B-74D9BD23FECC}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {DE0C697B-A2AC-45E5-BC3B-74D9BD23FECC}.Release|Any CPU.Build.0 = Release|Any CPU
+        {1E6EA56D-69FE-4CD0-BFE1-C186C1BD3BFC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {1E6EA56D-69FE-4CD0-BFE1-C186C1BD3BFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {1E6EA56D-69FE-4CD0-BFE1-C186C1BD3BFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {1E6EA56D-69FE-4CD0-BFE1-C186C1BD3BFC}.Release|Any CPU.Build.0 = Release|Any CPU
+        {EAFD6265-DE4D-4F00-9309-CF0363A8ACD3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {EAFD6265-DE4D-4F00-9309-CF0363A8ACD3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {EAFD6265-DE4D-4F00-9309-CF0363A8ACD3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {EAFD6265-DE4D-4F00-9309-CF0363A8ACD3}.Release|Any CPU.Build.0 = Release|Any CPU
     EndGlobalSection
     GlobalSection(SolutionProperties) = preSolution
         HideSolutionNode = FALSE
