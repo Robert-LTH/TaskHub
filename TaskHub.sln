@@ -113,6 +113,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PetStoreHandler.Tests", "te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FakeRestServicePlugin", "plugins/services/FakeRestServicePlugin/FakeRestServicePlugin.csproj", "{80C8250F-5BC1-4A2F-AC82-406DD3328C4F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SysManServicePlugin", "plugins/services/SysManServicePlugin/SysManServicePlugin.csproj", "{D488DF1F-2DD0-4EE3-9244-FDEB33942525}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FakeRestHandler", "plugins/handlers/FakeRestHandler/FakeRestHandler.csproj", "{405D337B-91A9-422F-B913-4A7C1C892B93}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FakeRestHandler.Tests", "tests/FakeRestHandler.Tests/FakeRestHandler.Tests.csproj", "{DE0C697B-A2AC-45E5-BC3B-74D9BD23FECC}"
@@ -351,6 +353,10 @@ Global
         {80C8250F-5BC1-4A2F-AC82-406DD3328C4F}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {80C8250F-5BC1-4A2F-AC82-406DD3328C4F}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {80C8250F-5BC1-4A2F-AC82-406DD3328C4F}.Release|Any CPU.Build.0 = Release|Any CPU
+        {D488DF1F-2DD0-4EE3-9244-FDEB33942525}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {D488DF1F-2DD0-4EE3-9244-FDEB33942525}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {D488DF1F-2DD0-4EE3-9244-FDEB33942525}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {D488DF1F-2DD0-4EE3-9244-FDEB33942525}.Release|Any CPU.Build.0 = Release|Any CPU
         {405D337B-91A9-422F-B913-4A7C1C892B93}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
         {405D337B-91A9-422F-B913-4A7C1C892B93}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {405D337B-91A9-422F-B913-4A7C1C892B93}.Release|Any CPU.ActiveCfg = Release|Any CPU
