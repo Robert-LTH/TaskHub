@@ -128,6 +128,151 @@ public class SqlServicePlugin : IServicePlugin
         public Task<OperationResult> UpdateAsync(string commandText) => ExecuteNonQueryAsync(commandText);
         public Task<OperationResult> DeleteAsync(string commandText) => ExecuteNonQueryAsync(commandText);
 
+        public async Task<OperationResult> BulkUpdateAsync(
+            string tableName,
+            string keyColumn,
+            IEnumerable<IDictionary<string, object?>> rows,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(tableName)) throw new ArgumentNullException(nameof(tableName));
+            if (string.IsNullOrWhiteSpace(keyColumn)) throw new ArgumentNullException(nameof(keyColumn));
+            if (rows is null) throw new ArgumentNullException(nameof(rows));
+
+            var sanitizedTable = EscapeIdentifier(tableName);
+            var sanitizedKey = EscapeIdentifier(keyColumn);
+
+            var rowList = rows.ToList();
+            if (rowList.Count == 0)
+            {
+                return new OperationResult(JsonSerializer.SerializeToElement(0), "success");
+            }
+
+            var preparedRows = new List<(IDictionary<string, object?> Data, object? KeyValue)>(rowList.Count);
+            var columnOrder = new List<string>();
+            var sanitizedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var updateFlagColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var row in rowList)
+            {
+                if (!TryGetValueCaseInsensitive(row, keyColumn, out var keyValue))
+                {
+                    throw new InvalidOperationException($"Row is missing key column '{keyColumn}'.");
+                }
+
+                preparedRows.Add((row, keyValue));
+
+                foreach (var columnName in row.Keys)
+                {
+                    if (string.Equals(columnName, keyColumn, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    if (!sanitizedColumns.ContainsKey(columnName))
+                    {
+                        sanitizedColumns[columnName] = EscapeIdentifier(columnName);
+                        columnOrder.Add(columnName);
+                        updateFlagColumns[columnName] = EscapeIdentifier($"__th_update_{columnName}");
+                    }
+                }
+            }
+
+            if (columnOrder.Count == 0)
+            {
+                var payload = JsonSerializer.SerializeToElement(new { RowsAffected = 0, RowsProcessed = rowList.Count });
+                return new OperationResult(payload, "success");
+            }
+
+            await using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+            var tempTableName = $"#Bulk_{Guid.NewGuid():N}";
+            await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                await using (var createCommand = connection.CreateCommand())
+                {
+                    createCommand.Transaction = transaction;
+                    createCommand.CommandText = $"SELECT TOP 0 * INTO {tempTableName} FROM {sanitizedTable};";
+                    await createCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                }
+
+                foreach (var columnName in columnOrder)
+                {
+                    await using var alterCommand = connection.CreateCommand();
+                    alterCommand.Transaction = transaction;
+                    alterCommand.CommandText = $"ALTER TABLE {tempTableName} ADD {updateFlagColumns[columnName]} BIT NOT NULL DEFAULT 0;";
+                    await alterCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                }
+
+                var insertColumnList = new List<string> { sanitizedKey };
+                insertColumnList.AddRange(columnOrder.Select(col => sanitizedColumns[col]));
+                insertColumnList.AddRange(columnOrder.Select(col => updateFlagColumns[col]));
+                var insertColumnsClause = string.Join(", ", insertColumnList);
+
+                foreach (var entry in preparedRows)
+                {
+                    await using var insertCommand = connection.CreateCommand();
+                    insertCommand.Transaction = transaction;
+
+                    var parameterNames = new List<string>();
+                    var keyParameter = insertCommand.CreateParameter();
+                    keyParameter.ParameterName = "@p0";
+                    keyParameter.Value = entry.KeyValue ?? DBNull.Value;
+                    insertCommand.Parameters.Add(keyParameter);
+                    parameterNames.Add(keyParameter.ParameterName);
+
+                    var hasColumnFlags = new List<bool>(columnOrder.Count);
+                    var paramIndex = 1;
+                    foreach (var columnName in columnOrder)
+                    {
+                        var parameterName = $"@p{paramIndex++}";
+                        var hasValue = TryGetValueCaseInsensitive(entry.Data, columnName, out var value);
+                        insertCommand.Parameters.AddWithValue(parameterName, hasValue ? value ?? DBNull.Value : DBNull.Value);
+                        parameterNames.Add(parameterName);
+                        hasColumnFlags.Add(hasValue);
+                    }
+
+                    for (var i = 0; i < columnOrder.Count; i++)
+                    {
+                        var flagParameterName = $"@p{paramIndex++}";
+                        insertCommand.Parameters.AddWithValue(flagParameterName, hasColumnFlags[i] ? 1 : 0);
+                        parameterNames.Add(flagParameterName);
+                    }
+
+                    insertCommand.CommandText = $"INSERT INTO {tempTableName} ({insertColumnsClause}) VALUES ({string.Join(", ", parameterNames)});";
+                    await insertCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                }
+
+                var updateAssignments = columnOrder.Select(columnName =>
+                    $"Target.{sanitizedColumns[columnName]} = CASE WHEN Source.{updateFlagColumns[columnName]} = 1 THEN Source.{sanitizedColumns[columnName]} ELSE Target.{sanitizedColumns[columnName]} END");
+                var setClause = string.Join(", ", updateAssignments);
+
+                await using (var mergeCommand = connection.CreateCommand())
+                {
+                    mergeCommand.Transaction = transaction;
+                    mergeCommand.CommandText = $@"MERGE {sanitizedTable} AS Target
+USING {tempTableName} AS Source
+    ON Target.{sanitizedKey} = Source.{sanitizedKey}
+WHEN MATCHED THEN
+    UPDATE SET {setClause};";
+
+                    var affected = await mergeCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+
+                    await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+
+                    var resultPayload = JsonSerializer.SerializeToElement(new { RowsAffected = affected, RowsProcessed = rowList.Count });
+                    return new OperationResult(resultPayload, "success");
+                }
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                throw;
+            }
+        }
+
+
         public async Task<OperationResult> UpsertAsync(
             string tableName,
             string keyColumn,
@@ -149,7 +294,7 @@ public class SqlServicePlugin : IServicePlugin
 
             await using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-            await using var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
 
             try
             {
@@ -241,6 +386,25 @@ ELSE
             return results;
         }
 
+        private static bool TryGetValueCaseInsensitive(IDictionary<string, object?> source, string key, out object? value)
+        {
+            if (source.TryGetValue(key, out value))
+            {
+                return true;
+            }
+
+            foreach (var kvp in source)
+            {
+                if (string.Equals(kvp.Key, key, StringComparison.OrdinalIgnoreCase))
+                {
+                    value = kvp.Value;
+                    return true;
+                }
+            }
+
+            value = null;
+            return false;
+        }
         private async Task<OperationResult> ExecuteNonQueryAsync(string commandText)
         {
             try
