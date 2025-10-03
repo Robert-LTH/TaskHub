@@ -75,6 +75,7 @@ public static class CommandEndpoints
             var enqueueTime = DateTimeOffset.UtcNow + (delay ?? TimeSpan.Zero);
             return Results.Ok(new EnqueuedCommandResult(jobId, Array.Empty<ExecutedCommandResult>(), enqueueTime));
         }).RequireAuthorization("CommandExecutor")
+            .Accepts<CommandChainRequest>("application/json")
           .Produces<EnqueuedCommandResult>();
 
         app.MapPost("/commands/recurring", async (HttpRequest httpRequest, IBackgroundJobClient client, PayloadVerifier verifier, HttpContext context, ILoggerFactory loggerFactory, CommandExecutor executor) =>

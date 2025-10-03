@@ -12,7 +12,14 @@ namespace PowerShellServicePlugin;
 
 public class PowerShellServicePlugin : IServicePlugin
 {
+    public IServiceProvider Services { get; private set; } = default!;
+
     public string Name => "powershell";
+
+    public void OnLoaded(IServiceProvider services)
+    {
+        Services = services ?? throw new ArgumentNullException(nameof(services));
+    }
 
     public object GetService() => new PowerShellService();
 
@@ -121,4 +128,5 @@ public class PowerShellServicePlugin : IServicePlugin
         }
     }
 }
+
 

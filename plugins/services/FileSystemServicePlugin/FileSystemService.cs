@@ -12,6 +12,8 @@ public class FileSystemServicePlugin : IServicePlugin
 {
     private readonly string[] _tempPaths;
 
+    public IServiceProvider Services { get; private set; } = default!;
+
     public FileSystemServicePlugin(IConfiguration? config = null)
     {
         _tempPaths = config?.GetSection("PluginSettings:FileSystem:TempPaths").Get<string[]>()
@@ -19,6 +21,11 @@ public class FileSystemServicePlugin : IServicePlugin
     }
 
     public string Name => "filesystem";
+
+    public void OnLoaded(IServiceProvider services)
+    {
+        Services = services ?? throw new ArgumentNullException(nameof(services));
+    }
 
     public object GetService() => new FileSystemService(_tempPaths);
 
@@ -183,4 +190,5 @@ public class FileSystemServicePlugin : IServicePlugin
         }
     }
 }
+
 

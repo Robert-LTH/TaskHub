@@ -22,7 +22,9 @@ public class DiskSpaceCommandHandler : CommandHandlerBase, ICommandHandler<DiskS
 
     public override void OnLoaded(IServiceProvider services)
     {
+        base.OnLoaded(services);
         _reporting = (IReportingContainer?)services.GetService(typeof(IReportingContainer));
     }
 }
+
 

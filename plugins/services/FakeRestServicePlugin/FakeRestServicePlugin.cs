@@ -9,6 +9,8 @@ public class FakeRestServicePlugin : IServicePlugin, IDisposable
     private readonly ServiceProvider _provider;
     private readonly FakeRestClient _client;
 
+    public IServiceProvider Services { get; private set; } = default!;
+
     public FakeRestServicePlugin()
     {
         var services = new ServiceCollection();
@@ -19,6 +21,11 @@ public class FakeRestServicePlugin : IServicePlugin, IDisposable
 
     public string Name => "fakerest";
 
+    public void OnLoaded(IServiceProvider services)
+    {
+        Services = services ?? throw new ArgumentNullException(nameof(services));
+    }
+
     public object GetService() => _client;
 
     public void Dispose()
@@ -27,3 +34,4 @@ public class FakeRestServicePlugin : IServicePlugin, IDisposable
         GC.SuppressFinalize(this);
     }
 }
+

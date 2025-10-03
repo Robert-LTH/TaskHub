@@ -1,0 +1,11 @@
+<Project>
+  <ItemGroup>
+    <PluginOutput Include="$(SolutionDir)src\plugins\**\*.*" />
+  </ItemGroup>
+
+  <Target Name="CopyPlugins" AfterTargets="Build">
+    <Copy SourceFiles="@(PluginOutput)"
+          DestinationFiles="@(PluginOutput->'$(OutDir)plugins\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
+</Project>

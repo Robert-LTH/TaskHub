@@ -19,5 +19,11 @@ public class UpdateBookCommandHandler : CommandHandlerBase, ICommandHandler<Upda
 
     public override ICommand Create(JsonElement payload) => ((ICommandHandler<UpdateBookCommand>)this).Create(payload);
 
-    public override void OnLoaded(IServiceProvider services) { }
+    public override void OnLoaded(IServiceProvider services)
+    {
+        base.OnLoaded(services);
+    }
 }
+
+
+

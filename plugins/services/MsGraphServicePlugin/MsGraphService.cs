@@ -20,6 +20,8 @@ public class MsGraphServicePlugin : IServicePlugin
     private readonly ClientCertificateCredential _credential;
     private readonly ILogger<MsGraphServicePlugin> _logger;
 
+    public IServiceProvider Services { get; private set; } = default!;
+
     public MsGraphServicePlugin(IConfiguration config, ILogger<MsGraphServicePlugin> logger)
     {
         _logger = logger;
@@ -47,6 +49,11 @@ public class MsGraphServicePlugin : IServicePlugin
 
     public string Name => "msgraph";
 
+    public void OnLoaded(IServiceProvider services)
+    {
+        Services = services ?? throw new ArgumentNullException(nameof(services));
+    }
+
     public object GetService() => _factory.CreateClient("msgraph");
 
     private class AuthHandler : DelegatingHandler
@@ -70,3 +77,4 @@ public class MsGraphServicePlugin : IServicePlugin
         }
     }
 }
+

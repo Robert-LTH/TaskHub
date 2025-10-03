@@ -8,12 +8,26 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace TaskHub.Abstractions;
 
-public abstract class CommandHandlerBase : ICommandHandler
+public abstract class CommandHandlerBase : ICommandHandler, IServiceProviderAware
 {
+    private IServiceProvider? _services;
+
+    protected IServiceProvider Services =>
+        _services ?? throw new InvalidOperationException("Handler has not been initialized with services.");
+
     public abstract IReadOnlyCollection<string> Commands { get; }
     public abstract string ServiceName { get; }
     public abstract ICommand Create(JsonElement payload);
-    public abstract void OnLoaded(IServiceProvider services);
+
+    public virtual void OnLoaded(IServiceProvider services)
+    {
+        SetServiceProvider(services);
+    }
+
+    public void SetServiceProvider(IServiceProvider services)
+    {
+        _services = services ?? throw new ArgumentNullException(nameof(services));
+    }
 
     public virtual async Task<OperationResult> ExecuteAsync(
         JsonElement payload,
@@ -37,3 +51,4 @@ public abstract class CommandHandlerBase : ICommandHandler
         return result;
     }
 }
+

@@ -21,7 +21,10 @@ public class CcmExecCommandHandler : CommandHandlerBase, ICommandHandler<Trigger
     public override ICommand Create(JsonElement payload) =>
         ((ICommandHandler<TriggerScheduleCommand>)this).Create(payload);
 
-    public override void OnLoaded(IServiceProvider services) { }
+    public override void OnLoaded(IServiceProvider services)
+    {
+        base.OnLoaded(services);
+    }
 
     public bool ShouldLoad(IServiceProvider services, out string? reason)
     {
@@ -43,3 +46,6 @@ public class CcmExecCommandHandler : CommandHandlerBase, ICommandHandler<Trigger
         return true;
     }
 }
+
+
+

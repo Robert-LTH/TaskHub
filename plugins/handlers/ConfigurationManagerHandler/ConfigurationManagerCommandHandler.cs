@@ -83,5 +83,11 @@ public class ConfigurationManagerCommandHandler : CommandHandlerBase,
         return ((ICommandHandler<QueryCommand>)this).Create(payload);
     }
 
-    public override void OnLoaded(IServiceProvider services) { }
+    public override void OnLoaded(IServiceProvider services)
+    {
+        base.OnLoaded(services);
+    }
 }
+
+
+

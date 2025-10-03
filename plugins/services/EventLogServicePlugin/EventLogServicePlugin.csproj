@@ -5,6 +5,9 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="System.Diagnostics.EventLog" Version="8.0.0" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\\..\\..\\src\\TaskHub.Abstractions\\TaskHub.Abstractions.csproj" />
   </ItemGroup>
 </Project>

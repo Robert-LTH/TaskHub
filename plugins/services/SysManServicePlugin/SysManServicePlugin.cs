@@ -1,6 +1,7 @@
-using System;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Net;
 using TaskHub.Abstractions;
 
 namespace SysManServicePlugin;
@@ -9,6 +10,8 @@ public sealed class SysManServicePlugin : IServicePlugin, IDisposable
 {
     private readonly ServiceProvider _provider;
     private readonly SysManClient _client;
+
+    public IServiceProvider Services { get; private set; } = default!;
 
     public SysManServicePlugin(IConfiguration configuration)
     {
@@ -20,13 +23,24 @@ public sealed class SysManServicePlugin : IServicePlugin, IDisposable
         {
             var options = sp.GetRequiredService<SysManClientOptions>();
             http.BaseAddress = options.BaseAddress ?? new Uri("https://localhost/");
-        });
+        }).ConfigurePrimaryHttpMessageHandler(() =>
+        {
+            return new HttpClientHandler()
+            {
+                UseDefaultCredentials = true,
+            };
+        }); ;
 
         _provider = services.BuildServiceProvider();
         _client = _provider.GetRequiredService<SysManClient>();
     }
 
     public string Name => "sysman";
+
+    public void OnLoaded(IServiceProvider services)
+    {
+        Services = services ?? throw new ArgumentNullException(nameof(services));
+    }
 
     public object GetService() => _client;
 
@@ -36,7 +50,7 @@ public sealed class SysManServicePlugin : IServicePlugin, IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private static SysManClientOptions CreateOptions(IConfiguration configuration)
+    internal static SysManClientOptions CreateOptions(IConfiguration configuration)
     {
         var section = configuration.GetSection("PluginSettings:SysMan");
         var baseAddress = section["BaseAddress"];
@@ -54,7 +68,8 @@ public sealed class SysManServicePlugin : IServicePlugin, IDisposable
     }
 }
 
-internal sealed class SysManClientOptions
+public sealed class SysManClientOptions
 {
     public Uri? BaseAddress { get; init; }
 }
+

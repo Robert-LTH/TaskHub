@@ -13,6 +13,8 @@ public class ActiveDirectoryServicePlugin : IServicePlugin
     private readonly bool _useProcessContext;
     private readonly ILogger<ActiveDirectoryServicePlugin> _logger;
 
+    public IServiceProvider Services { get; private set; } = default!;
+
     public ActiveDirectoryServicePlugin(IConfiguration config, ILogger<ActiveDirectoryServicePlugin> logger)
     {
         _logger = logger;
@@ -27,6 +29,11 @@ public class ActiveDirectoryServicePlugin : IServicePlugin
 
     public string Name => "activedirectory";
 
+    public void OnLoaded(IServiceProvider services)
+    {
+        Services = services ?? throw new ArgumentNullException(nameof(services));
+    }
+
     public object GetService() => (Func<string, DirectorySearcher>)(path =>
     {
         _logger.LogInformation("Creating searcher for {Path}", path);
@@ -36,3 +43,4 @@ public class ActiveDirectoryServicePlugin : IServicePlugin
         return new DirectorySearcher(entry);
     });
 }
+

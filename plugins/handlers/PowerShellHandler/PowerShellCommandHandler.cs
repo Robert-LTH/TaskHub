@@ -34,5 +34,11 @@ public class PowerShellCommandHandler : CommandHandlerBase, ICommandHandler<Powe
     public override ICommand Create(JsonElement payload) =>
         ((ICommandHandler<PowerShellCommand>)this).Create(payload);
 
-    public override void OnLoaded(IServiceProvider services) { }
+    public override void OnLoaded(IServiceProvider services)
+    {
+        base.OnLoaded(services);
+    }
 }
+
+
+

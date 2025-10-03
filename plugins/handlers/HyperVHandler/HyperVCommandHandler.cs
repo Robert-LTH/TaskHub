@@ -15,7 +15,10 @@ public class HyperVCommandHandler : CommandHandlerBase,
 
     public override string ServiceName => "hyperv";
 
-    public override void OnLoaded(IServiceProvider services) { }
+    public override void OnLoaded(IServiceProvider services)
+    {
+        base.OnLoaded(services);
+    }
 
     CreateVmCommand ICommandHandler<CreateVmCommand>.Create(JsonElement payload)
     {
@@ -54,3 +57,6 @@ public class HyperVCommandHandler : CommandHandlerBase,
         return ((ICommandHandler<CreateVmCommand>)this).Create(payload);
     }
 }
+
+
+

@@ -21,6 +21,7 @@ public class DiskSpaceCommand : ICommand
     {
         dynamic fs = service.GetService();
         OperationResult result = fs.GetFreeSpace(Request.Path);
+        logger.LogInformation(result.Payload.GetValueOrDefault().GetRawText());
         if (result.Payload.HasValue)
         {
             _container?.AddReport("disk-free", result.Payload.Value);

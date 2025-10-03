@@ -161,6 +161,11 @@ public class PluginManagerTests
     private class StubServicePlugin : IServicePlugin
     {
         public string Name => "Stub";
+        public IServiceProvider Services { get; private set; } = default!;
+        public void OnLoaded(IServiceProvider services)
+        {
+            Services = services ?? throw new ArgumentNullException(nameof(services));
+        }
         public object GetService() => new object();
     }
 
@@ -199,7 +204,10 @@ public class PluginManagerTests
         public override ICommand Create(JsonElement payload) => CreateCommand(payload);
 
         StubCommand ICommandHandler<StubCommand>.Create(JsonElement payload) => CreateCommand(payload);
-        public override void OnLoaded(IServiceProvider services) { }
+        public override void OnLoaded(IServiceProvider services)
+        {
+            base.OnLoaded(services);
+        }
     }
 
     [Fact]
@@ -224,3 +232,6 @@ public class PluginManagerTests
         Assert.Equal("value", info.Inputs[0].Name);
     }
 }
+
+
+

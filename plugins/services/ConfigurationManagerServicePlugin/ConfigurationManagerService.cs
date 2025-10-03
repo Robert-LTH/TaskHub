@@ -10,7 +10,14 @@ namespace ConfigurationManagerServicePlugin;
 
 public class ConfigurationManagerServicePlugin : IServicePlugin
 {
+    public IServiceProvider Services { get; private set; } = default!;
+
     public string Name => "configurationmanager";
+
+    public void OnLoaded(IServiceProvider services)
+    {
+        Services = services ?? throw new ArgumentNullException(nameof(services));
+    }
 
     public object GetService() => new ConfigurationManagerService();
 
@@ -205,4 +212,5 @@ public class ConfigurationManagerServicePlugin : IServicePlugin
         }
     }
 }
+
 

@@ -21,7 +21,7 @@ public sealed class SysManClient
     {
         _http = http ?? throw new ArgumentNullException(nameof(http));
         if (options is null) throw new ArgumentNullException(nameof(options));
-
+        
         if (_http.BaseAddress is null)
         {
             _http.BaseAddress = options.BaseAddress ?? new Uri("https://localhost/");
@@ -115,7 +115,7 @@ public sealed class SysManClient
     {
         using var response = await _http.GetAsync($"api/v2/accessresource/{id}/member", cancellationToken).ConfigureAwait(false);
         var items = await ReadContentAsync<List<AccessMemberSearchItem>>(response, cancellationToken).ConfigureAwait(false);
-        return items ?? Array.Empty<AccessMemberSearchItem>();
+        return items ?? new List<AccessMemberSearchItem>();
     }
 
     #endregion
@@ -141,7 +141,7 @@ public sealed class SysManClient
 
         using var response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
         var clients = await ReadContentAsync<List<Client>>(response, cancellationToken).ConfigureAwait(false);
-        return clients ?? Array.Empty<Client>();
+        return clients ?? new List<Client>();
     }
 
     public async Task<IReadOnlyList<Client>> CreateClientsBatchAsync(CreateClientBatchV2Command command, CancellationToken cancellationToken = default)
@@ -150,7 +150,7 @@ public sealed class SysManClient
 
         using var response = await _http.PostAsJsonAsync("api/v2/client/batch", command, _serializerOptions, cancellationToken).ConfigureAwait(false);
         var clients = await ReadContentAsync<List<Client>>(response, cancellationToken).ConfigureAwait(false);
-        return clients ?? Array.Empty<Client>();
+        return clients ?? new List<Client>();
     }
 
     public async Task<Client?> PatchClientAsync(long id, PatchClientV2Command command, CancellationToken cancellationToken = default)
@@ -279,7 +279,7 @@ public sealed class SysManClient
 
         using var response = await _http.PostAsJsonAsync("api/v2/client/getByNames", query, _serializerOptions, cancellationToken).ConfigureAwait(false);
         var items = await ReadContentAsync<List<Target>>(response, cancellationToken).ConfigureAwait(false);
-        return items ?? Array.Empty<Target>();
+        return items ?? new List<Target>();
     }
 
     public async Task<IReadOnlyList<OperatingSystemSearchItem>> GetClientOperatingSystemsAsync(IEnumerable<long> clientIds, CancellationToken cancellationToken = default)
@@ -288,7 +288,7 @@ public sealed class SysManClient
 
         using var response = await _http.PostAsJsonAsync("api/v2/client/getOperatingSystems", clientIds, _serializerOptions, cancellationToken).ConfigureAwait(false);
         var items = await ReadContentAsync<List<OperatingSystemSearchItem>>(response, cancellationToken).ConfigureAwait(false);
-        return items ?? Array.Empty<OperatingSystemSearchItem>();
+        return items ?? new List<OperatingSystemSearchItem>();
     }
 
     public async Task<ClientSearchItemPagedResult?> SearchClientsAsync(
@@ -320,7 +320,7 @@ public sealed class SysManClient
         var uri = BuildUri("api/v2/client/list", ("ids", ids ?? Array.Empty<long>()));
         using var response = await _http.GetAsync(uri, cancellationToken).ConfigureAwait(false);
         var items = await ReadContentAsync<List<Client>>(response, cancellationToken).ConfigureAwait(false);
-        return items ?? Array.Empty<Client>();
+        return items ?? new List<Client>();
     }
 
     public async Task<Client?> FindClientAsync(long? id = null, string? name = null, string? assetTag = null, string? serial = null, string? uuid = null, string? mac = null, CancellationToken cancellationToken = default)
@@ -424,7 +424,7 @@ public sealed class SysManClient
 
         using var response = await _http.GetAsync($"api/v2/client/{Uri.EscapeDataString(name)}/group", cancellationToken).ConfigureAwait(false);
         var items = await ReadContentAsync<List<GroupSearchItem>>(response, cancellationToken).ConfigureAwait(false);
-        return items ?? Array.Empty<GroupSearchItem>();
+        return items ?? new List<GroupSearchItem>();
     }
 
     public async Task<IReadOnlyList<GroupSearchItem>> GetGroupsByTargetsAsync(IEnumerable<string> targetNames, CancellationToken cancellationToken = default)
@@ -433,7 +433,7 @@ public sealed class SysManClient
 
         using var response = await _http.PostAsJsonAsync("api/v2/client/getGroups", targetNames, _serializerOptions, cancellationToken).ConfigureAwait(false);
         var items = await ReadContentAsync<List<GroupSearchItem>>(response, cancellationToken).ConfigureAwait(false);
-        return items ?? Array.Empty<GroupSearchItem>();
+        return items ?? new List<GroupSearchItem>();
     }
 
     public async Task<IReadOnlyList<CollectionMembershipSearchItem>> GetClientCollectionsAsync(string name, bool? queryMembershipFilter = null, CancellationToken cancellationToken = default)
@@ -443,7 +443,7 @@ public sealed class SysManClient
         var uri = BuildUri($"api/v2/client/{Uri.EscapeDataString(name)}/collection", ("queryMembershipFilter", queryMembershipFilter));
         using var response = await _http.GetAsync(uri, cancellationToken).ConfigureAwait(false);
         var items = await ReadContentAsync<List<CollectionMembershipSearchItem>>(response, cancellationToken).ConfigureAwait(false);
-        return items ?? Array.Empty<CollectionMembershipSearchItem>();
+        return items ?? new List<CollectionMembershipSearchItem>();
     }
 
     public async Task<IReadOnlyList<CollectionMembershipSearchItem>> GetCollectionsByTargetsAsync(IEnumerable<string> targetNames, bool? queryMembershipFilter = null, CancellationToken cancellationToken = default)
@@ -453,7 +453,7 @@ public sealed class SysManClient
         var uri = BuildUri("api/v2/client/getCollections", ("queryMembershipFilter", queryMembershipFilter));
         using var response = await _http.PostAsJsonAsync(uri, targetNames, _serializerOptions, cancellationToken).ConfigureAwait(false);
         var items = await ReadContentAsync<List<CollectionMembershipSearchItem>>(response, cancellationToken).ConfigureAwait(false);
-        return items ?? Array.Empty<CollectionMembershipSearchItem>();
+        return items ?? new List<CollectionMembershipSearchItem>();
     }
 
     public async Task<GroupMapTargetResult?> UpdateClientGroupsAsync(MapTargetsToGroupsCommand command, CancellationToken cancellationToken = default)
@@ -493,7 +493,7 @@ public sealed class SysManClient
         var uri = BuildUri("api/v2/client/health", ("targetId", targetId), ("targetName", targetName), ("onlyLatest", onlyLatest));
         using var response = await _http.GetAsync(uri, cancellationToken).ConfigureAwait(false);
         var items = await ReadContentAsync<List<ComputerHealth>>(response, cancellationToken).ConfigureAwait(false);
-        return items ?? Array.Empty<ComputerHealth>();
+        return items ?? new List<ComputerHealth>();
     }
 
     public async Task<bool> DeleteClientHealthAsync(DeleteComputerHealthCommand command, CancellationToken cancellationToken = default)
@@ -546,8 +546,8 @@ public sealed class SysManClient
     public async Task<IReadOnlyList<string>> GetClientNotificationActionsAsync(CancellationToken cancellationToken = default)
     {
         using var response = await _http.GetAsync("api/v2/client/clientNotification/actions", cancellationToken).ConfigureAwait(false);
-        var actions = await ReadContentAsync<List<string>>(response, cancellationToken).ConfigureAwait(false);
-        return actions ?? Array.Empty<string>();
+        var actions = await ReadContentAsync<List<string>>(response, cancellationToken).ConfigureAwait(false) ?? new List<string>();
+        return actions;
     }
 
     public async Task<bool> PostClientNotificationAsync(ClientNotificationV2Command command, CancellationToken cancellationToken = default)
@@ -662,8 +662,8 @@ public sealed class SysManClient
             ("targetType", targetType));
 
         using var response = await _http.GetAsync(uri, cancellationToken).ConfigureAwait(false);
-        var items = await ReadContentAsync<List<TargetSearchItem>>(response, cancellationToken).ConfigureAwait(false);
-        return items ?? Array.Empty<TargetSearchItem>();
+        var items = await ReadContentAsync<List<TargetSearchItem>>(response, cancellationToken).ConfigureAwait(false) ?? new List<TargetSearchItem>();
+        return items;
     }
 
     public async Task<VerificationResult?> ValidateCollectionExistsAsync(

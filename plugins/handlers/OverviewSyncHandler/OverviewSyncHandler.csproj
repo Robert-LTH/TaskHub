@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <BaseOutputPath>C:\repos\TaskHub\src\TaskHub.Server\plugins\handlers\OverviewSyncHandler</BaseOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\services\OverviewServicePlugin\OverviewServicePlugin.csproj" />
+    <ProjectReference Include="..\\..\\..\\src\\TaskHub.Abstractions\\TaskHub.Abstractions.csproj" />
+    <ProjectReference Include="..\\..\\services\\SysManServicePlugin\\SysManServicePlugin.csproj" />
+    <ProjectReference Include="..\\..\\services\\SqlServicePlugin\\SqlServicePlugin.csproj" />
+  </ItemGroup>
+</Project>
+

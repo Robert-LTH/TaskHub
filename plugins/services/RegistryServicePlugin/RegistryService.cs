@@ -7,7 +7,14 @@ namespace RegistryServicePlugin;
 
 public class RegistryServicePlugin : IServicePlugin
 {
+    public IServiceProvider Services { get; private set; } = default!;
+
     public string Name => "registry";
+
+    public void OnLoaded(IServiceProvider services)
+    {
+        Services = services ?? throw new ArgumentNullException(nameof(services));
+    }
 
     public object GetService() => new RegistryService();
 
@@ -104,3 +111,4 @@ public class RegistryServicePlugin : IServicePlugin
         }
     }
 }
+

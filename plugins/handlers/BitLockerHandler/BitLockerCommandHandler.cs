@@ -30,6 +30,7 @@ public class BitLockerCommandHandler : CommandHandlerBase, ICommandHandler<Rotat
 
     public override void OnLoaded(IServiceProvider services)
     {
+        base.OnLoaded(services);
         var logger = services.GetRequiredService<ILogger<BitLockerService>>();
         var config = services.GetService<IConfiguration>();
         var url = config?["PluginSettings:BitLocker:HubUrl"] ?? "http://localhost/bitlocker";
@@ -51,3 +52,4 @@ public class BitLockerCommandHandler : CommandHandlerBase, ICommandHandler<Rotat
         }
     }
 }
+

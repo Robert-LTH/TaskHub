@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <BasePluginOutputDir>$(SolutionDir)src\plugins\</BasePluginOutputDir>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+</Project>

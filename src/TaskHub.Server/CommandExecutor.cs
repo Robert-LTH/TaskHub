@@ -67,6 +67,11 @@ public class CommandExecutor
             return (new OperationResult(null, $"Handler {command} not found."), null);
         }
 
+        if (handler is IServiceProviderAware aware)
+        {
+            aware.SetServiceProvider(_manager.RootServices);
+        }
+
         var service = _manager.GetService(handler.ServiceName);
         var effectivePayload = ResolvePayload(command, payload);
         var result = await handler.ExecuteAsync(effectivePayload, service, _logger, token);
@@ -181,6 +186,11 @@ public class CommandExecutor
                 lastResult = new OperationResult(null, $"Handler {command} not found.");
                 current = NullElement;
                 continue;
+            }
+
+            if (handler is IServiceProviderAware aware)
+            {
+                aware.SetServiceProvider(_manager.RootServices);
             }
 
             var service = _manager.GetService(handler.ServiceName);
@@ -302,6 +312,11 @@ public class CommandExecutor
                 lastResult = new OperationResult(null, $"Handler {item.Command} not found.");
                 previous = NullElement;
                 continue;
+            }
+
+            if (handler is IServiceProviderAware aware)
+            {
+                aware.SetServiceProvider(_manager.RootServices);
             }
 
             var service = _manager.GetService(handler.ServiceName);
@@ -436,3 +451,4 @@ public class CommandExecutor
         }
     }
 }
+

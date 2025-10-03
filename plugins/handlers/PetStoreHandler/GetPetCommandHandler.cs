@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using TaskHub.Abstractions;
@@ -16,4 +17,9 @@ public class GetPetCommandHandler : CommandHandlerBase, ICommandHandler<GetPetCo
     }
 
     public override ICommand Create(JsonElement payload) => ((ICommandHandler<GetPetCommand>)this).Create(payload);
+
+    public override void OnLoaded(IServiceProvider services)
+    {
+        //throw new NotImplementedException();
+    }
 }

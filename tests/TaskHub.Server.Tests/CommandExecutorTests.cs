@@ -32,6 +32,7 @@ public class CommandExecutorTests
             handlersDict[pair.Key] = (pair.Value, new PluginLoadContext(path), path, null);
         }
         var serviceInstance = (IServicePlugin)Activator.CreateInstance(serviceType)!;
+        serviceInstance.OnLoaded(provider);
         servicesDict[serviceInstance.Name] = (serviceType, new PluginLoadContext(path), path, null);
         return manager;
     }
@@ -80,6 +81,11 @@ public class CommandExecutorTests
     private class StubService : IServicePlugin
     {
         public string Name => "Stub";
+        public IServiceProvider Services { get; private set; } = default!;
+        public void OnLoaded(IServiceProvider services)
+        {
+            Services = services ?? throw new ArgumentNullException(nameof(services));
+        }
         public object GetService() => new object();
     }
 
@@ -103,7 +109,10 @@ public class CommandExecutorTests
     {
         public override IReadOnlyCollection<string> Commands => new[] { "cmd1" };
         public override string ServiceName => "Stub";
-        public override void OnLoaded(IServiceProvider services) { }
+        public override void OnLoaded(IServiceProvider services)
+        {
+            base.OnLoaded(services);
+        }
         public override ICommand Create(JsonElement payload) => new DelayCommand(200, false);
         DelayCommand ICommandHandler<DelayCommand>.Create(JsonElement payload) => new DelayCommand(200, false);
     }
@@ -112,7 +121,10 @@ public class CommandExecutorTests
     {
         public override IReadOnlyCollection<string> Commands => new[] { "cmd2" };
         public override string ServiceName => "Stub";
-        public override void OnLoaded(IServiceProvider services) { }
+        public override void OnLoaded(IServiceProvider services)
+        {
+            base.OnLoaded(services);
+        }
         public override ICommand Create(JsonElement payload) => new DelayCommand(200, false);
         DelayCommand ICommandHandler<DelayCommand>.Create(JsonElement payload) => new DelayCommand(200, false);
     }
@@ -121,8 +133,15 @@ public class CommandExecutorTests
     {
         public override IReadOnlyCollection<string> Commands => new[] { "cmdWait" };
         public override string ServiceName => "Stub";
-        public override void OnLoaded(IServiceProvider services) { }
+        public override void OnLoaded(IServiceProvider services)
+        {
+            base.OnLoaded(services);
+        }
         public override ICommand Create(JsonElement payload) => new DelayCommand(200, true);
         DelayCommand ICommandHandler<DelayCommand>.Create(JsonElement payload) => new DelayCommand(200, true);
     }
 }
+
+
+
+

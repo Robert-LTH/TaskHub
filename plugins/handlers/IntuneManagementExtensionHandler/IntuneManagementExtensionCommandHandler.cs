@@ -19,5 +19,11 @@ public class IntuneManagementExtensionCommandHandler : CommandHandlerBase, IComm
     public override ICommand Create(JsonElement payload) =>
         ((ICommandHandler<TriggerSyncCommand>)this).Create(payload);
 
-    public override void OnLoaded(IServiceProvider services) { }
+    public override void OnLoaded(IServiceProvider services)
+    {
+        base.OnLoaded(services);
+    }
 }
+
+
+

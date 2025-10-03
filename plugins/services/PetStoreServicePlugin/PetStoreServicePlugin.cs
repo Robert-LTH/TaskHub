@@ -9,6 +9,8 @@ public class PetStoreServicePlugin : IServicePlugin, IDisposable
     private readonly ServiceProvider _provider;
     private readonly PetStoreClient _client;
 
+    public IServiceProvider Services { get; private set; } = default!;
+
     public PetStoreServicePlugin()
     {
         var services = new ServiceCollection();
@@ -19,6 +21,11 @@ public class PetStoreServicePlugin : IServicePlugin, IDisposable
 
     public string Name => "petstore";
 
+    public void OnLoaded(IServiceProvider services)
+    {
+        Services = services ?? throw new ArgumentNullException(nameof(services));
+    }
+
     public object GetService() => _client;
 
     public void Dispose()
@@ -27,3 +34,4 @@ public class PetStoreServicePlugin : IServicePlugin, IDisposable
         GC.SuppressFinalize(this);
     }
 }
+

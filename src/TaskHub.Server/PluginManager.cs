@@ -24,6 +24,8 @@ public class PluginManager
     private readonly ConcurrentDictionary<string, byte> _assemblies = new();
     private readonly IServiceProvider _provider;
     private readonly ILogger<PluginManager> _logger;
+    internal IServiceProvider RootServices => _provider;
+
 
     public PluginManager(IServiceProvider provider)
     {
@@ -48,6 +50,7 @@ public class PluginManager
                 try
                 {
                     var instance = (IServicePlugin)CreateInstanceWithFallback(resolvedType)!;
+                    instance.OnLoaded(_provider);
                     // Check optional prerequisites
                     if (instance is TaskHub.Abstractions.IPluginPrerequisites pre && !pre.ShouldLoad(_provider, out var reason))
                     {
@@ -99,14 +102,19 @@ public class PluginManager
                         // Prefer the equivalent type from the default load context if available
                         var resolvedType = TryResolveDefaultContextType(type) ?? type;
                         var instance = CreateInstanceWithFallback(resolvedType)!;
-                        // Check optional prerequisites
-                        if (instance is TaskHub.Abstractions.IPluginPrerequisites pre && !pre.ShouldLoad(_provider, out var reason))
+                        if (instance is not IServicePlugin plugin)
+                        {
+                            continue;
+                        }
+
+                        plugin.OnLoaded(_provider);
+
+                        if (plugin is TaskHub.Abstractions.IPluginPrerequisites pre && !pre.ShouldLoad(_provider, out var reason))
                         {
                             _logger.LogInformation("Skipping service plugin {Type} due to prerequisites not met: {Reason}", resolvedType.FullName, reason ?? "unspecified");
                             continue;
                         }
 
-                        var plugin = (IServicePlugin)instance;
                         var version = GetDirectoryVersion(pluginDir);
                         _services[plugin.Name] = (resolvedType, context, dll, version);
                         _assemblies[dll] = 0;
@@ -258,7 +266,9 @@ public class PluginManager
     {
         if (_services.TryGetValue(name, out var value))
         {
-            return (IServicePlugin)CreateInstanceWithFallback(value.ServiceType)!;
+            var instance = (IServicePlugin)CreateInstanceWithFallback(value.ServiceType)!;
+            instance.OnLoaded(_provider);
+            return instance;
         }
 
         throw new InvalidOperationException($"Service plugin {name} not loaded");
@@ -312,7 +322,12 @@ public class PluginManager
                     try
                     {
                         var svcInstance = CreateInstanceWithFallback(match.ServiceType);
-                        if (svcInstance != null)
+                        if (svcInstance is IServicePlugin svcPlugin)
+                        {
+                            svcPlugin.OnLoaded(_provider);
+                            extras.Add(svcPlugin);
+                        }
+                        else if (svcInstance != null)
                         {
                             extras.Add(svcInstance);
                         }
@@ -405,4 +420,8 @@ public class PluginManager
         _assemblies.Clear();
     }
 }
+
+
+
+
 

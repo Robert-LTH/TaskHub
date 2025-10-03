@@ -10,7 +10,14 @@ namespace ConfigurationManagerAdminServicePlugin;
 
 public class ConfigurationManagerAdminServicePlugin : IServicePlugin
 {
+    public IServiceProvider Services { get; private set; } = default!;
+
     public string Name => "configurationmanageradmin";
+
+    public void OnLoaded(IServiceProvider services)
+    {
+        Services = services ?? throw new ArgumentNullException(nameof(services));
+    }
 
     public object GetService() => new ConfigurationManagerAdminService();
 
@@ -73,3 +80,4 @@ public class ConfigurationManagerAdminServicePlugin : IServicePlugin
         }
     }
 }
+

@@ -49,7 +49,7 @@ public class BinanceCommandHandler : CommandHandlerBase,
 
     GetTickerPriceCommand ICommandHandler<GetTickerPriceCommand>.Create(JsonElement payload)
     {
-        var request = JsonSerializer.Deserialize<GetTickerPriceRequest>(payload.GetRawText()) ?? new GetTickerPriceRequest();
+        var request = JsonSerializer.Deserialize<GetTickerPriceRequest>(payload.GetRawText()) ?? new GetTickerPriceRequest(payload.GetRawText());
         return new GetTickerPriceCommand(request);
     }
 
@@ -130,5 +130,11 @@ public class BinanceCommandHandler : CommandHandlerBase,
         return ((ICommandHandler<GetServerTimeCommand>)this).Create(payload);
     }
 
-    public override void OnLoaded(IServiceProvider services) { }
+    public override void OnLoaded(IServiceProvider services)
+    {
+        base.OnLoaded(services);
+    }
 }
+
+
+

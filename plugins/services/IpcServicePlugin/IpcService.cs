@@ -12,12 +12,19 @@ public class IpcServicePlugin : IServicePlugin
 {
     private readonly ILogger<IpcServicePlugin> _logger;
 
+    public IServiceProvider Services { get; private set; } = default!;
+
     public IpcServicePlugin(ILogger<IpcServicePlugin> logger)
     {
         _logger = logger;
     }
 
     public string Name => "ipc";
+
+    public void OnLoaded(IServiceProvider services)
+    {
+        Services = services ?? throw new ArgumentNullException(nameof(services));
+    }
 
     public object GetService() => new IpcClient(_logger);
 }
@@ -43,4 +50,5 @@ public class IpcClient
         return response ?? string.Empty;
     }
 }
+
 

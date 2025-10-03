@@ -10,7 +10,14 @@ namespace EventLogServicePlugin;
 
 public class EventLogServicePlugin : IServicePlugin
 {
+    public IServiceProvider Services { get; private set; } = default!;
+
     public string Name => "eventlog";
+
+    public void OnLoaded(IServiceProvider services)
+    {
+        Services = services ?? throw new ArgumentNullException(nameof(services));
+    }
 
     public object GetService() => new EventLogService();
 
@@ -76,3 +83,4 @@ public class EventLogServicePlugin : IServicePlugin
         }
     }
 }
+

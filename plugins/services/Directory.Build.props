@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <OutputPath>$(MSBuildThisFileDirectory)..\..\src\plugins\services\$(MSBuildProjectName)\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+</Project>

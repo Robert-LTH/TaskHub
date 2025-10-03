@@ -18,6 +18,7 @@ using System.Security.Claims;
 using TaskHub.Abstractions;
 using TaskHub.Server;
 using Xunit;
+using System.Threading.Tasks;
 
 namespace TaskHub.Server.Tests;
 
@@ -71,31 +72,32 @@ public class CommandLogsTests
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
         var logs = await res.Content.ReadFromJsonAsync<string[]>();
         Assert.Contains("hello", logs);
+        return;
     }
 }
 
-internal class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
-{
-    public TestAuthHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, Microsoft.Extensions.Logging.ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock)
-        : base(options, logger, encoder, clock) { }
+//internal class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+//{
+//    public TestAuthHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, Microsoft.Extensions.Logging.ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock)
+//        : base(options, logger, encoder, clock) { }
 
-    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
-    {
-        if (!Request.Headers.ContainsKey("Test-Auth"))
-        {
-            return Task.FromResult(AuthenticateResult.Fail("Missing"));
-        }
-        var claims = new List<Claim> { new Claim(ClaimTypes.Name, "test") };
-        if (Request.Headers.TryGetValue("Test-Role", out var roles))
-        {
-            foreach (var role in roles.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries))
-            {
-                claims.Add(new Claim(ClaimTypes.Role, role));
-            }
-        }
-        var identity = new ClaimsIdentity(claims, Scheme.Name);
-        var principal = new ClaimsPrincipal(identity);
-        var ticket = new AuthenticationTicket(principal, Scheme.Name);
-        return Task.FromResult(AuthenticateResult.Success(ticket));
-    }
-}
+//    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+//    {
+//        if (!Request.Headers.ContainsKey("Test-Auth"))
+//        {
+//            return Task.FromResult(AuthenticateResult.Fail("Missing"));
+//        }
+//        var claims = new List<Claim> { new Claim(ClaimTypes.Name, "test") };
+//        if (Request.Headers.TryGetValue("Test-Role", out var roles))
+//        {
+//            foreach (var role in roles.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries))
+//            {
+//                claims.Add(new Claim(ClaimTypes.Role, role));
+//            }
+//        }
+//        var identity = new ClaimsIdentity(claims, Scheme.Name);
+//        var principal = new ClaimsPrincipal(identity);
+//        var ticket = new AuthenticationTicket(principal, Scheme.Name);
+//        return Task.FromResult(AuthenticateResult.Success(ticket));
+//    }
+//}

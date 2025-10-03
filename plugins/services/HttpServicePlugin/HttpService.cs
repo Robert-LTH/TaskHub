@@ -13,6 +13,8 @@ public class HttpServicePlugin : IServicePlugin, IDisposable
     private readonly IHttpClientFactory _factory;
     private readonly ServiceProvider _provider;
 
+    public IServiceProvider Services { get; private set; } = default!;
+
     public HttpServicePlugin(ILogger<HttpServicePlugin> logger)
     {
         var services = new ServiceCollection();
@@ -33,6 +35,11 @@ public class HttpServicePlugin : IServicePlugin, IDisposable
     }
 
     public string Name => "http";
+
+    public void OnLoaded(IServiceProvider services)
+    {
+        Services = services ?? throw new ArgumentNullException(nameof(services));
+    }
 
     public object GetService() => _factory.CreateClient("http");
 
@@ -58,4 +65,5 @@ public class HttpServicePlugin : IServicePlugin, IDisposable
         }
     }
 }
+
 

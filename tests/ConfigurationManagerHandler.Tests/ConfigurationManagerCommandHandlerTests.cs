@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
@@ -239,6 +240,11 @@ public class ConfigurationManagerCommandHandlerTests
     {
         public string Name => "configurationmanageradmin";
         public FakeAdminService Service { get; } = new();
+        public IServiceProvider Services { get; private set; } = default!;
+        public void OnLoaded(IServiceProvider services)
+        {
+            Services = services ?? throw new ArgumentNullException(nameof(services));
+        }
         public object GetService() => Service;
 
         public class FakeAdminService
@@ -284,6 +290,11 @@ public class ConfigurationManagerCommandHandlerTests
     {
         public string Name => "configurationmanager";
         public FakeWmiService Service { get; } = new();
+        public IServiceProvider Services { get; private set; } = default!;
+        public void OnLoaded(IServiceProvider services)
+        {
+            Services = services ?? throw new ArgumentNullException(nameof(services));
+        }
         public object GetService() => Service;
 
         public class FakeWmiService
@@ -357,3 +368,5 @@ public class ConfigurationManagerCommandHandlerTests
         }
     }
 }
+
+

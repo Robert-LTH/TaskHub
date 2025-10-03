@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using TaskHub.Abstractions;
@@ -16,4 +17,11 @@ public class GetBookCommandHandler : CommandHandlerBase, ICommandHandler<GetBook
     }
 
     public override ICommand Create(JsonElement payload) => ((ICommandHandler<GetBookCommand>)this).Create(payload);
+
+    public override void OnLoaded(IServiceProvider services)
+    {
+        base.OnLoaded(services);
+        //throw new NotImplementedException();
+    }
 }
+

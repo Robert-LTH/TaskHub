@@ -25,3 +25,9 @@ public interface ICommandHandler<out TCommand> : ICommandHandler where TCommand 
 {
     new TCommand Create(JsonElement payload);
 }
+
+public interface IServiceProviderAware
+{
+    void SetServiceProvider(IServiceProvider services);
+}
+

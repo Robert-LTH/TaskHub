@@ -36,11 +36,13 @@ public class CleanTempCommandHandler :
 
     public override void OnLoaded(IServiceProvider services)
     {
+        base.OnLoaded(services);
         var recurringJobs = services.GetRequiredService<IRecurringJobManager>();
-        var payload = JsonSerializer.Deserialize<JsonElement>("{}");
+        var payload = JsonSerializer.Deserialize<JsonElement>("{ \"path\": \"C:\\\\temp22\"}");
         recurringJobs.AddOrUpdate<CommandExecutor>(
             "clean-temp",
             exec => exec.Execute("clean-temp", payload, CancellationToken.None),
             "0 */7 * * *");
     }
 }
+
