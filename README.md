@@ -241,6 +241,7 @@ Common settings:
   },
   "JobHandling": {
     "Mode": "",
+    "ExecutionContext": "",
     "WebSocketServerUrl": "ws://localhost:8080/ws?id=taskhub"
   },
   "PayloadVerification": {
@@ -260,9 +261,11 @@ Common settings:
 
 Authorization policies are configured under `Authorization:Policies`. SID-to-role mapping is configured under `Authorization:SidMappings`.
 
+`JobHandling:ExecutionContext` can be set to `RegularUser` or `System` to control which handlers the running server instance is allowed to execute. If it is empty, TaskHub treats Windows LocalSystem as `System` and all other processes as `RegularUser`.
+
 ## Plugin Development
 
-A service plugin implements `IServicePlugin` and exposes a named service instance. A handler plugin implements `ICommandHandler`, declares one or more command names, declares the service plugin name it needs, and creates an `ICommand` for each request payload.
+A service plugin implements `IServicePlugin` and exposes a named service instance. A handler plugin implements `ICommandHandler`, declares one or more command names, declares the service plugin name it needs, declares whether it can run as `RegularUser`, `System`, or `RegularUserOrSystem`, and creates an `ICommand` for each request payload.
 
 ```mermaid
 classDiagram

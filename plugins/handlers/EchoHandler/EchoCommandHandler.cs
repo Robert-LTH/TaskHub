@@ -9,6 +9,7 @@ public class EchoCommandHandler : CommandHandlerBase, ICommandHandler<EchoComman
 {
     public override IReadOnlyCollection<string> Commands => new[] { "echo" };
     public override string ServiceName => "http";
+    public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
     private IReportingContainer? _reporting;
 
     EchoCommand ICommandHandler<EchoCommand>.Create(JsonElement payload)
@@ -26,4 +27,3 @@ public class EchoCommandHandler : CommandHandlerBase, ICommandHandler<EchoComman
         _reporting = (IReportingContainer?)services.GetService(typeof(IReportingContainer));
     }
 }
-

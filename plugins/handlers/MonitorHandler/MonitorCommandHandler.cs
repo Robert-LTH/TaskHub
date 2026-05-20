@@ -9,6 +9,7 @@ public class MonitorCommandHandler : CommandHandlerBase, ICommandHandler<Monitor
 {
     public override IReadOnlyCollection<string> Commands => new[] { "monitor-info" };
     public override string ServiceName => "monitor";
+    public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
     private IReportingContainer? _reporting;
 
     MonitorInfoCommand ICommandHandler<MonitorInfoCommand>.Create(JsonElement payload)
@@ -25,4 +26,3 @@ public class MonitorCommandHandler : CommandHandlerBase, ICommandHandler<Monitor
         _reporting = (IReportingContainer?)services.GetService(typeof(IReportingContainer));
     }
 }
-

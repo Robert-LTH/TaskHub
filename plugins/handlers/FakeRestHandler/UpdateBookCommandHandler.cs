@@ -10,6 +10,7 @@ public class UpdateBookCommandHandler : CommandHandlerBase, ICommandHandler<Upda
 {
     public override IReadOnlyCollection<string> Commands => new[] { "book-update" };
     public override string ServiceName => "fakerest";
+    public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
 
     UpdateBookCommand ICommandHandler<UpdateBookCommand>.Create(JsonElement payload)
     {
@@ -24,6 +25,5 @@ public class UpdateBookCommandHandler : CommandHandlerBase, ICommandHandler<Upda
         base.OnLoaded(services);
     }
 }
-
 
 

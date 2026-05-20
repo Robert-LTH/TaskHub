@@ -12,6 +12,7 @@ public class CleanTempCommandHandler :
 {
     public override IReadOnlyCollection<string> Commands => new[] { "clean-temp", "delete-folder" };
     public override string ServiceName => "filesystem";
+    public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
 
     CleanTempCommand ICommandHandler<CleanTempCommand>.Create(JsonElement payload)
     {

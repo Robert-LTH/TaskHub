@@ -9,6 +9,7 @@ public class IntuneManagementExtensionCommandHandler : CommandHandlerBase, IComm
 {
     public override IReadOnlyCollection<string> Commands => new[] { "intune-sync" };
     public override string ServiceName => "powershell";
+    public override CommandExecutionContext ExecutionContext => CommandExecutionContext.System;
 
     TriggerSyncCommand ICommandHandler<TriggerSyncCommand>.Create(JsonElement payload)
     {
@@ -24,6 +25,5 @@ public class IntuneManagementExtensionCommandHandler : CommandHandlerBase, IComm
         base.OnLoaded(services);
     }
 }
-
 
 

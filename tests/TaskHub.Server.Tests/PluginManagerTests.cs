@@ -198,6 +198,7 @@ public class PluginManagerTests
     {
         public override IReadOnlyCollection<string> Commands => new[] { "stub" };
         public override string ServiceName => "Stub";
+        public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
         private static StubCommand CreateCommand(JsonElement payload) =>
             new StubCommand(JsonSerializer.Deserialize<StubRequest>(payload.GetRawText()) ?? new StubRequest());
 
@@ -225,13 +226,17 @@ public class PluginManagerTests
         var manager = CreateManager();
         var field = typeof(PluginManager).GetField("_commandInfos", BindingFlags.NonPublic | BindingFlags.Instance)!;
         var dict = (ConcurrentDictionary<string, CommandInfo>)field.GetValue(manager)!;
-        dict["stub"] = new CommandInfo("stub", "svc", new[] { new CommandInput("value", "string") });
+        dict["stub"] = new CommandInfo(
+            "stub",
+            "svc",
+            CommandExecutionContext.RegularUserOrSystem,
+            new[] { new CommandInput("value", "string") });
 
         var info = Assert.Single(manager.GetCommandInfos());
         Assert.Equal("stub", info.Name);
+        Assert.Equal(CommandExecutionContext.RegularUserOrSystem, info.ExecutionContext);
         Assert.Equal("value", info.Inputs[0].Name);
     }
 }
-
 
 

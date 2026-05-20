@@ -9,6 +9,7 @@ public class DeleteBookCommandHandler : CommandHandlerBase, ICommandHandler<Dele
 {
     public override IReadOnlyCollection<string> Commands => new[] { "book-delete" };
     public override string ServiceName => "fakerest";
+    public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
 
     DeleteBookCommand ICommandHandler<DeleteBookCommand>.Create(JsonElement payload)
     {
@@ -23,6 +24,5 @@ public class DeleteBookCommandHandler : CommandHandlerBase, ICommandHandler<Dele
         base.OnLoaded(services);
     }
 }
-
 
 

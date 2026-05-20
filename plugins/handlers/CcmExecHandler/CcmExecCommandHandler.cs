@@ -10,6 +10,7 @@ public class CcmExecCommandHandler : CommandHandlerBase, ICommandHandler<Trigger
 {
     public override IReadOnlyCollection<string> Commands => new[] { "ccmexwc" };
     public override string ServiceName => "configurationmanager";
+    public override CommandExecutionContext ExecutionContext => CommandExecutionContext.System;
 
     TriggerScheduleCommand ICommandHandler<TriggerScheduleCommand>.Create(JsonElement payload)
     {
@@ -46,6 +47,5 @@ public class CcmExecCommandHandler : CommandHandlerBase, ICommandHandler<Trigger
         return true;
     }
 }
-
 
 

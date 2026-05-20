@@ -10,6 +10,8 @@ public class StartProcessCommandHandler : CommandHandlerBase, ICommandHandler<St
 
     public override string ServiceName => "process";
 
+    public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
+
     StartProcessCommand ICommandHandler<StartProcessCommand>.Create(JsonElement payload)
     {
         var request = JsonSerializer.Deserialize<StartProcessRequest>(payload.GetRawText()) ?? new StartProcessRequest();

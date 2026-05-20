@@ -15,6 +15,8 @@ public class HyperVCommandHandler : CommandHandlerBase,
 
     public override string ServiceName => "hyperv";
 
+    public override CommandExecutionContext ExecutionContext => CommandExecutionContext.System;
+
     public override void OnLoaded(IServiceProvider services)
     {
         base.OnLoaded(services);
@@ -68,5 +70,4 @@ public class HyperVCommandHandler : CommandHandlerBase,
         };
     }
 }
-
 

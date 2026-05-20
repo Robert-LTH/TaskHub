@@ -17,6 +17,7 @@ public abstract class CommandHandlerBase : ICommandHandler, IServiceProviderAwar
 
     public abstract IReadOnlyCollection<string> Commands { get; }
     public abstract string ServiceName { get; }
+    public abstract CommandExecutionContext ExecutionContext { get; }
     public abstract ICommand Create(JsonElement payload);
     public virtual ICommand Create(string command, JsonElement payload) => Create(payload);
 

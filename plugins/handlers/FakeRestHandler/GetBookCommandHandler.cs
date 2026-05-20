@@ -9,6 +9,7 @@ public class GetBookCommandHandler : CommandHandlerBase, ICommandHandler<GetBook
 {
     public override IReadOnlyCollection<string> Commands => new[] { "book-get" };
     public override string ServiceName => "fakerest";
+    public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
 
     GetBookCommand ICommandHandler<GetBookCommand>.Create(JsonElement payload)
     {
@@ -24,4 +25,3 @@ public class GetBookCommandHandler : CommandHandlerBase, ICommandHandler<GetBook
         //throw new NotImplementedException();
     }
 }
-

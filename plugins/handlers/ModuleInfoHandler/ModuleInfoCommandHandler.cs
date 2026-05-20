@@ -9,6 +9,7 @@ public class ModuleInfoCommandHandler : CommandHandlerBase, ICommandHandler<Modu
 {
     public override IReadOnlyCollection<string> Commands => new[] { "loaded-modules" };
     public override string ServiceName => "appdomain";
+    public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
     private IReportingContainer? _reporting;
 
     ModuleInfoCommand ICommandHandler<ModuleInfoCommand>.Create(JsonElement payload)

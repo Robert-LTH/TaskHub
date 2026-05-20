@@ -22,6 +22,7 @@ public class PowerShellCommandHandler : CommandHandlerBase, ICommandHandler<Powe
 
     public override IReadOnlyCollection<string> Commands => new[] { "powershell-script" };
     public override string ServiceName => "powershell";
+    public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
 
     PowerShellCommand ICommandHandler<PowerShellCommand>.Create(JsonElement payload)
     {
@@ -39,6 +40,5 @@ public class PowerShellCommandHandler : CommandHandlerBase, ICommandHandler<Powe
         base.OnLoaded(services);
     }
 }
-
 
 

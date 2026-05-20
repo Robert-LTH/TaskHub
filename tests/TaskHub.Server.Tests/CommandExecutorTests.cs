@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using TaskHub.Abstractions;
@@ -37,10 +38,30 @@ public class CommandExecutorTests
         return manager;
     }
 
-    private static CommandExecutor CreateExecutor(Dictionary<string, Type> handlers, Type serviceType)
+    private static CommandExecutor CreateExecutor(
+        Dictionary<string, Type> handlers,
+        Type serviceType,
+        CommandExecutionContext? executionContext = null)
     {
         var manager = CreateManager(handlers, serviceType);
-        return new CommandExecutor(manager, Array.Empty<IResultPublisher>(), NullLoggerFactory.Instance);
+        var values = new Dictionary<string, string?>();
+        if (executionContext.HasValue)
+        {
+            values["JobHandling:ExecutionContext"] = executionContext.Value.ToString();
+        }
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(values)
+            .Build();
+
+        return new CommandExecutor(
+            manager,
+            Array.Empty<IResultPublisher>(),
+            NullLoggerFactory.Instance,
+            new ScriptsRepository(),
+            new JobLogStore(),
+            Array.Empty<ILogPublisher>(),
+            configuration);
     }
 
     [Fact]
@@ -99,6 +120,57 @@ public class CommandExecutorTests
         Assert.Equal("first-output", PreviousOutputCommand.SeenPreviousOutput);
     }
 
+    [Fact]
+    public async Task Execute_RejectsHandlerThatRequiresDifferentExecutionContext()
+    {
+        var handlers = new Dictionary<string, Type>
+        {
+            ["cmdSystem"] = typeof(SystemOnlyHandler)
+        };
+        var executor = CreateExecutor(handlers, typeof(StubService), CommandExecutionContext.RegularUser);
+        var payload = JsonDocument.Parse("{}").RootElement;
+
+        var result = await executor.Execute("cmdSystem", payload, CancellationToken.None);
+
+        Assert.Contains("requires System execution context", result.Result);
+        Assert.Contains("runner is RegularUser", result.Result);
+    }
+
+    [Fact]
+    public async Task Execute_AllowsHandlerThatCanRunInEitherExecutionContext()
+    {
+        var handlers = new Dictionary<string, Type>
+        {
+            ["cmd1"] = typeof(Cmd1Handler)
+        };
+        var executor = CreateExecutor(handlers, typeof(StubService), CommandExecutionContext.System);
+        var payload = JsonDocument.Parse("{}").RootElement;
+
+        var result = await executor.Execute("cmd1", payload, CancellationToken.None);
+
+        Assert.Equal("ok", result.Result);
+    }
+
+    [Fact]
+    public async Task ExecuteChain_RejectsUserOnlyHandlerOnSystemRunner()
+    {
+        var handlers = new Dictionary<string, Type>
+        {
+            ["cmdUser"] = typeof(UserOnlyHandler)
+        };
+        var executor = CreateExecutor(handlers, typeof(StubService), CommandExecutionContext.System);
+        var items = new[]
+        {
+            new CommandItem("cmdUser", JsonDocument.Parse("{}").RootElement)
+        };
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => executor.ExecuteChain(items, null, CancellationToken.None));
+
+        Assert.Contains("requires RegularUser execution context", exception.Message);
+        Assert.Contains("runner is System", exception.Message);
+    }
+
     private class StubService : IServicePlugin
     {
         public string Name => "Stub";
@@ -130,6 +202,7 @@ public class CommandExecutorTests
     {
         public override IReadOnlyCollection<string> Commands => new[] { "cmd1" };
         public override string ServiceName => "Stub";
+        public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
         public override void OnLoaded(IServiceProvider services)
         {
             base.OnLoaded(services);
@@ -142,6 +215,7 @@ public class CommandExecutorTests
     {
         public override IReadOnlyCollection<string> Commands => new[] { "cmd2" };
         public override string ServiceName => "Stub";
+        public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
         public override void OnLoaded(IServiceProvider services)
         {
             base.OnLoaded(services);
@@ -154,6 +228,7 @@ public class CommandExecutorTests
     {
         public override IReadOnlyCollection<string> Commands => new[] { "cmdWait" };
         public override string ServiceName => "Stub";
+        public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
         public override void OnLoaded(IServiceProvider services)
         {
             base.OnLoaded(services);
@@ -196,6 +271,7 @@ public class CommandExecutorTests
     {
         public override IReadOnlyCollection<string> Commands => new[] { "cmdProduce" };
         public override string ServiceName => "Stub";
+        public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
         public override ICommand Create(JsonElement payload) => new ProduceOutputCommand();
         ProduceOutputCommand ICommandHandler<ProduceOutputCommand>.Create(JsonElement payload) => new ProduceOutputCommand();
     }
@@ -204,10 +280,27 @@ public class CommandExecutorTests
     {
         public override IReadOnlyCollection<string> Commands => new[] { "cmdReadPrevious" };
         public override string ServiceName => "Stub";
+        public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
         public override ICommand Create(JsonElement payload) => new PreviousOutputCommand(payload);
         PreviousOutputCommand ICommandHandler<PreviousOutputCommand>.Create(JsonElement payload) => new PreviousOutputCommand(payload);
     }
+
+    private class SystemOnlyHandler : CommandHandlerBase, ICommandHandler<DelayCommand>
+    {
+        public override IReadOnlyCollection<string> Commands => new[] { "cmdSystem" };
+        public override string ServiceName => "Stub";
+        public override CommandExecutionContext ExecutionContext => CommandExecutionContext.System;
+        public override ICommand Create(JsonElement payload) => new DelayCommand(1, false);
+        DelayCommand ICommandHandler<DelayCommand>.Create(JsonElement payload) => new DelayCommand(1, false);
+    }
+
+    private class UserOnlyHandler : CommandHandlerBase, ICommandHandler<DelayCommand>
+    {
+        public override IReadOnlyCollection<string> Commands => new[] { "cmdUser" };
+        public override string ServiceName => "Stub";
+        public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUser;
+        public override ICommand Create(JsonElement payload) => new DelayCommand(1, false);
+        DelayCommand ICommandHandler<DelayCommand>.Create(JsonElement payload) => new DelayCommand(1, false);
+    }
 }
-
-
 

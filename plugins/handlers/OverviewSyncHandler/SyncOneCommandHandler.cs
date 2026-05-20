@@ -10,6 +10,7 @@ public class SyncOneCommandHandler : CommandHandlerBase, ICommandHandler<SyncOne
 {
     public override IReadOnlyCollection<string> Commands => new[] { "syncone" };
     public override string ServiceName => "overview";
+    public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
 
     SyncOneCommand ICommandHandler<SyncOneCommand>.Create(JsonElement payload)
     {
@@ -23,4 +24,3 @@ public class SyncOneCommandHandler : CommandHandlerBase, ICommandHandler<SyncOne
         base.OnLoaded(services);
     }
 }
-

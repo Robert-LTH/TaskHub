@@ -31,6 +31,8 @@ public class BinanceCommandHandler : CommandHandlerBase,
 
     public override string ServiceName => "binance";
 
+    public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
+
     CallEndpointCommand ICommandHandler<CallEndpointCommand>.Create(JsonElement payload)
     {
         var request = JsonSerializer.Deserialize<CallEndpointRequest>(payload.GetRawText()) ?? new CallEndpointRequest();
@@ -152,5 +154,4 @@ public class BinanceCommandHandler : CommandHandlerBase,
         base.OnLoaded(services);
     }
 }
-
 

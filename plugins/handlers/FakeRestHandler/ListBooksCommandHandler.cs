@@ -9,6 +9,7 @@ public class ListBooksCommandHandler : CommandHandlerBase, ICommandHandler<ListB
 {
     public override IReadOnlyCollection<string> Commands => new[] { "book-list" };
     public override string ServiceName => "fakerest";
+    public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
 
     ListBooksCommand ICommandHandler<ListBooksCommand>.Create(JsonElement payload)
     {
@@ -22,6 +23,5 @@ public class ListBooksCommandHandler : CommandHandlerBase, ICommandHandler<ListB
         base.OnLoaded(services);
     }
 }
-
 
 

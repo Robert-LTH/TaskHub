@@ -9,6 +9,7 @@ public class DiskSpaceCommandHandler : CommandHandlerBase, ICommandHandler<DiskS
 {
     public override IReadOnlyCollection<string> Commands => new[] { "disk-free" };
     public override string ServiceName => "filesystem";
+    public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
     private IReportingContainer? _reporting;
 
     DiskSpaceCommand ICommandHandler<DiskSpaceCommand>.Create(JsonElement payload)
@@ -26,5 +27,4 @@ public class DiskSpaceCommandHandler : CommandHandlerBase, ICommandHandler<DiskS
         _reporting = (IReportingContainer?)services.GetService(typeof(IReportingContainer));
     }
 }
-
 

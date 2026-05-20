@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Hangfire.Server;
 using TaskHub.Abstractions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace TaskHub.Server;
@@ -19,6 +20,7 @@ public class CommandExecutor
     private readonly ILoggerFactory _loggerFactory;
     private readonly IJobLogStore _logStore;
     private readonly IEnumerable<ILogPublisher> _logPublishers;
+    private readonly CommandExecutionContext _executionContext;
 
     private const int MaxHistoryEntries = 100;
     private readonly ConcurrentDictionary<string, List<ExecutedCommandResult>> _history = new();
@@ -29,7 +31,7 @@ public class CommandExecutor
     private readonly ConcurrentDictionary<string, string?> _callbacks = new();
 
     public CommandExecutor(PluginManager manager, IEnumerable<IResultPublisher> publishers, ILoggerFactory loggerFactory,
-        ScriptsRepository scripts, IJobLogStore logStore, IEnumerable<ILogPublisher> logPublishers)
+        ScriptsRepository scripts, IJobLogStore logStore, IEnumerable<ILogPublisher> logPublishers, IConfiguration? configuration = null)
     {
         _manager = manager;
         _publishers = publishers;
@@ -37,6 +39,7 @@ public class CommandExecutor
         _scripts = scripts;
         _logStore = logStore;
         _logPublishers = logPublishers;
+        _executionContext = CommandExecutionContextResolver.Resolve(configuration);
     }
 
     // Backwards-compatible overloads used by some tests
@@ -66,6 +69,11 @@ public class CommandExecutor
         if (handler == null)
         {
             return (new OperationResult(null, $"Handler {command} not found."), null);
+        }
+
+        if (!CanRun(handler))
+        {
+            return (new OperationResult(null, BuildExecutionContextMismatchMessage(command, handler.ExecutionContext)), null);
         }
 
         if (handler is IServiceProviderAware aware)
@@ -237,6 +245,17 @@ public class CommandExecutor
                 continue;
             }
 
+            if (!CanRun(handler))
+            {
+                await DrainAsync();
+                var ranAtMismatch = DateTimeOffset.UtcNow;
+                var mismatch = new ExecutedCommandResult(item.Command, ranAtMismatch, NullElement, _manager.GetHandlerVersion(item.Command));
+                results.Add(mismatch);
+                lastResult = new OperationResult(null, BuildExecutionContextMismatchMessage(item.Command, handler.ExecutionContext));
+                previous = NullElement;
+                continue;
+            }
+
             if (handler is IServiceProviderAware aware)
             {
                 aware.SetServiceProvider(_manager.RootServices);
@@ -318,6 +337,12 @@ public class CommandExecutor
             _history.TryRemove(oldId, out _);
         }
     }
+
+    private bool CanRun(ICommandHandler handler) =>
+        CommandExecutionContextResolver.CanRun(handler.ExecutionContext, _executionContext);
+
+    private string BuildExecutionContextMismatchMessage(string command, CommandExecutionContext handlerContext) =>
+        $"Handler {command} requires {handlerContext} execution context but this runner is {_executionContext}.";
 
     private JsonElement BuildCommandPayload(string command, JsonElement originalPayload, JsonElement previousOutput, OperationResult lastResult)
     {

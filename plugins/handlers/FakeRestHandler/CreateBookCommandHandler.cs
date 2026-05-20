@@ -10,6 +10,7 @@ public class CreateBookCommandHandler : CommandHandlerBase, ICommandHandler<Crea
 {
     public override IReadOnlyCollection<string> Commands => new[] { "book-create" };
     public override string ServiceName => "fakerest";
+    public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
 
     CreateBookCommand ICommandHandler<CreateBookCommand>.Create(JsonElement payload)
     {
@@ -24,6 +25,5 @@ public class CreateBookCommandHandler : CommandHandlerBase, ICommandHandler<Crea
         base.OnLoaded(services);
     }
 }
-
 
 

@@ -188,7 +188,7 @@ public class PluginManager
                     foreach (var command in handler.Commands)
                     {
                         _handlers[command] = (resolvedType, context, dll, version);
-                        _commandInfos[command] = new CommandInfo(command, handler.ServiceName, inputs);
+                        _commandInfos[command] = new CommandInfo(command, handler.ServiceName, handler.ExecutionContext, inputs);
                     }
                     _assemblies[dll] = 0;
                     _logger.LogInformation("Loaded handler plugin {Type} v{Version} for commands: {Commands}", resolvedType.FullName, version?.ToString() ?? string.Empty, string.Join(", ", handler.Commands));
@@ -434,5 +434,4 @@ public class PluginManager
         _assemblies.Clear();
     }
 }
-
 

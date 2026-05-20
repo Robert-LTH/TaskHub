@@ -11,6 +11,7 @@ public interface ICommandHandler
 {
     IReadOnlyCollection<string> Commands { get; }
     string ServiceName { get; }
+    CommandExecutionContext ExecutionContext { get; }
     ICommand Create(JsonElement payload);
     ICommand Create(string command, JsonElement payload) => Create(payload);
     void OnLoaded(IServiceProvider services);

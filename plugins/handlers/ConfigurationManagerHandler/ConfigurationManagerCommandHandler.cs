@@ -25,6 +25,8 @@ public class ConfigurationManagerCommandHandler : CommandHandlerBase,
 
     public override string ServiceName => _useAdminService ? "configurationmanageradmin" : "configurationmanager";
 
+    public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
+
     QueryCommand ICommandHandler<QueryCommand>.Create(JsonElement payload)
     {
         var request = JsonSerializer.Deserialize<QueryRequest>(payload.GetRawText()) ?? new QueryRequest();
@@ -101,5 +103,4 @@ public class ConfigurationManagerCommandHandler : CommandHandlerBase,
         base.OnLoaded(services);
     }
 }
-
 

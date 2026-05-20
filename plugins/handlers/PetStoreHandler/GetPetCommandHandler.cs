@@ -9,6 +9,7 @@ public class GetPetCommandHandler : CommandHandlerBase, ICommandHandler<GetPetCo
 {
     public override IReadOnlyCollection<string> Commands => new[] { "pet-get" };
     public override string ServiceName => "petstore";
+    public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
 
     GetPetCommand ICommandHandler<GetPetCommand>.Create(JsonElement payload)
     {
