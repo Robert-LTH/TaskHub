@@ -13,6 +13,42 @@ namespace TaskHub.Server.Tests;
 public class PayloadVerifierTests
 {
     [Fact]
+    public void VerifyReturnsTrueWhenVerificationIsNotConfigured()
+    {
+        var config = new ConfigurationBuilder().Build();
+        using var verifier = new PayloadVerifier(config);
+        var payload = JsonDocument.Parse("{\"value\":1}").RootElement;
+
+        Assert.True(verifier.Verify(payload, null));
+    }
+
+    [Fact]
+    public void VerifyReturnsFalseWhenConfiguredCertificateIsMissing()
+    {
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["PayloadVerification:CertificatePath"] = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("n"))
+        }).Build();
+        using var verifier = new PayloadVerifier(config);
+        var payload = JsonDocument.Parse("{\"value\":1}").RootElement;
+
+        Assert.False(verifier.Verify(payload, null));
+    }
+
+    [Fact]
+    public void VerifyReturnsFalseWhenVerificationIsRequiredWithoutCertificate()
+    {
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["PayloadVerification:Required"] = "true"
+        }).Build();
+        using var verifier = new PayloadVerifier(config);
+        var payload = JsonDocument.Parse("{\"value\":1}").RootElement;
+
+        Assert.False(verifier.Verify(payload, null));
+    }
+
+    [Fact]
     public void VerifyReturnsTrueForValidSignature()
     {
         using var rsa = RSA.Create(2048);

@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
 var connections = new ConcurrentDictionary<string, ClientConnection>();
+var apiKey = builder.Configuration["WebSocketServer:ApiKey"];
 
 app.UseWebSockets();
 
@@ -15,6 +16,12 @@ app.MapGet("/", () => "WebSocket server running");
 
 app.Map("/ws", async context =>
 {
+    if (!IsAuthorized(context, apiKey))
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return;
+    }
+
     if (!context.WebSockets.IsWebSocketRequest)
     {
         context.Response.StatusCode = StatusCodes.Status400BadRequest;
@@ -80,8 +87,13 @@ app.Map("/ws", async context =>
     await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
 });
 
-app.MapPost("/command", async (JsonElement request) =>
+app.MapPost("/command", async (JsonElement request, HttpContext httpContext) =>
 {
+    if (!IsAuthorized(httpContext, apiKey))
+    {
+        return Results.Unauthorized();
+    }
+
     if (!request.TryGetProperty("command", out var commandEl))
     {
         return Results.BadRequest();
@@ -121,6 +133,24 @@ app.MapPost("/command", async (JsonElement request) =>
 
     return Results.Ok();
 });
+
+static bool IsAuthorized(HttpContext context, string? apiKey)
+{
+    if (string.IsNullOrWhiteSpace(apiKey))
+    {
+        return true;
+    }
+
+    var headerKey = context.Request.Headers["X-Api-Key"].ToString();
+    if (string.Equals(headerKey, apiKey, StringComparison.Ordinal))
+    {
+        return true;
+    }
+
+    var authorization = context.Request.Headers.Authorization.ToString();
+    return authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(authorization["Bearer ".Length..], apiKey, StringComparison.Ordinal);
+}
 
 app.Run();
 

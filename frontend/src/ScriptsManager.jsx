@@ -53,8 +53,7 @@ export default function ScriptsManager() {
 
   const onRun = async (item) => {
     const body = {
-      commands: ['powershell-script'],
-      payload: { scriptId: item.id },
+      commands: [{ command: 'powershell-script', payload: { scriptId: item.id } }],
       delay: null,
       signature: null
     };

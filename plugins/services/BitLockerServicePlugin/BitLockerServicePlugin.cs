@@ -6,7 +6,7 @@ using TaskHub.Abstractions;
 namespace BitLockerServicePlugin;
 
 [SupportedOSPlatform("windows")]
-public class BitLockerServicePlugin : IServicePlugin
+public class BitLockerServicePlugin : IServicePlugin, IDisposable
 {
     private readonly BitLockerService _service;
 
@@ -25,7 +25,12 @@ public class BitLockerServicePlugin : IServicePlugin
     }
 
     public object GetService() => _service;
-}
 
+    public void Dispose()
+    {
+        _service.Dispose();
+        GC.SuppressFinalize(this);
+    }
+}
 
 

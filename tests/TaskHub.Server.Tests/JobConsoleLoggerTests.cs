@@ -19,4 +19,19 @@ public class JobConsoleLoggerTests
         Assert.Single(logs!);
         Assert.Equal("cmd hello", logs![0]);
     }
+
+    [Fact]
+    public void Append_DoesNotEvictSameJobForManyMessages()
+    {
+        var store = new JobLogStore();
+
+        for (var i = 0; i < 150; i++)
+        {
+            store.Append("job1", $"message-{i}");
+        }
+
+        var logs = store.GetLogs("job1");
+        Assert.NotNull(logs);
+        Assert.Equal(150, logs!.Count);
+    }
 }

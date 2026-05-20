@@ -1,20 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
-using BitLockerServicePlugin;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using TaskHub.Abstractions;
 
 namespace BitLockerHandler;
 
 public class BitLockerCommandHandler : CommandHandlerBase, ICommandHandler<RotateKeyCommand>
 {
+    private static readonly SemaphoreSlim ConnectionLock = new(1, 1);
     private static HubConnection? _connection;
-    private static BitLockerService? _service;
+    private static string? _hubUrl;
 
     public override IReadOnlyCollection<string> Commands => new[] { "bitlocker-rotate" };
     public override string ServiceName => "bitlocker";
@@ -31,25 +30,48 @@ public class BitLockerCommandHandler : CommandHandlerBase, ICommandHandler<Rotat
     public override void OnLoaded(IServiceProvider services)
     {
         base.OnLoaded(services);
-        var logger = services.GetRequiredService<ILogger<BitLockerService>>();
-        var config = services.GetService<IConfiguration>();
-        var url = config?["PluginSettings:BitLocker:HubUrl"] ?? "http://localhost/bitlocker";
-        _connection = new HubConnectionBuilder().WithUrl(url).Build();
-        _ = _connection.StartAsync();
-
-        _service = new BitLockerService(logger);
-        _service.KeyAvailable += async (device, key) =>
-        {
-            await ReportKeyAsync(device, key);
-        };
+        var config = services.GetService(typeof(IConfiguration)) as IConfiguration;
+        _hubUrl = config?["PluginSettings:BitLocker:HubUrl"];
     }
 
     internal static async Task ReportKeyAsync(string deviceId, string key)
     {
+        var connection = await GetConnectionAsync();
+        if (connection?.State == HubConnectionState.Connected)
+        {
+            await connection.SendAsync("ReportKey", deviceId, key);
+        }
+    }
+
+    private static async Task<HubConnection?> GetConnectionAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_hubUrl))
+        {
+            return null;
+        }
+
         if (_connection?.State == HubConnectionState.Connected)
         {
-            await _connection.SendAsync("ReportKey", deviceId, key);
+            return _connection;
+        }
+
+        await ConnectionLock.WaitAsync();
+        try
+        {
+            _connection ??= new HubConnectionBuilder().WithUrl(_hubUrl).Build();
+            if (_connection.State == HubConnectionState.Disconnected)
+            {
+                await _connection.StartAsync();
+            }
+            return _connection;
+        }
+        catch
+        {
+            return null;
+        }
+        finally
+        {
+            ConnectionLock.Release();
         }
     }
 }
-

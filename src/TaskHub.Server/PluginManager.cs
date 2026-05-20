@@ -20,6 +20,7 @@ public class PluginManager
     // dependencies satisfied on each request.
     private readonly ConcurrentDictionary<string, (Type HandlerType, PluginLoadContext Context, string AssemblyPath, Version? Version)> _handlers = new();
     private readonly ConcurrentDictionary<string, (Type ServiceType, PluginLoadContext Context, string AssemblyPath, Version? Version)> _services = new();
+    private readonly ConcurrentDictionary<string, IServicePlugin> _serviceInstances = new();
     private readonly ConcurrentDictionary<string, CommandInfo> _commandInfos = new();
     private readonly ConcurrentDictionary<string, byte> _assemblies = new();
     private readonly IServiceProvider _provider;
@@ -49,7 +50,7 @@ public class PluginManager
                 var resolvedType = TryResolveDefaultContextType(kv.Value.ServiceType) ?? kv.Value.ServiceType;
                 try
                 {
-                    var instance = (IServicePlugin)CreateInstanceWithFallback(resolvedType)!;
+                    var instance = CreateServicePluginInstance(resolvedType);
                     instance.OnLoaded(_provider);
                     // Check optional prerequisites
                     if (instance is TaskHub.Abstractions.IPluginPrerequisites pre && !pre.ShouldLoad(_provider, out var reason))
@@ -59,6 +60,7 @@ public class PluginManager
                     }
 
                     _services[instance.Name] = (resolvedType, kv.Value.Context, kv.Value.AssemblyPath, kv.Value.Version);
+                    _serviceInstances[instance.Name] = instance;
                     _assemblies[kv.Value.AssemblyPath] = 0;
 
                     var asmName = AssemblyName.GetAssemblyName(kv.Value.AssemblyPath).Name;
@@ -101,11 +103,7 @@ public class PluginManager
                     {
                         // Prefer the equivalent type from the default load context if available
                         var resolvedType = TryResolveDefaultContextType(type) ?? type;
-                        var instance = CreateInstanceWithFallback(resolvedType)!;
-                        if (instance is not IServicePlugin plugin)
-                        {
-                            continue;
-                        }
+                        var plugin = CreateServicePluginInstance(resolvedType);
 
                         plugin.OnLoaded(_provider);
 
@@ -117,6 +115,7 @@ public class PluginManager
 
                         var version = GetDirectoryVersion(pluginDir);
                         _services[plugin.Name] = (resolvedType, context, dll, version);
+                        _serviceInstances[plugin.Name] = plugin;
                         _assemblies[dll] = 0;
                         // Track assembly simple name to prefer it for handlers
                         try
@@ -264,14 +263,29 @@ public class PluginManager
 
     public IServicePlugin GetService(string name)
     {
+        if (_serviceInstances.TryGetValue(name, out var existing))
+        {
+            return existing;
+        }
+
         if (_services.TryGetValue(name, out var value))
         {
-            var instance = (IServicePlugin)CreateInstanceWithFallback(value.ServiceType)!;
+            var instance = CreateServicePluginInstance(value.ServiceType);
             instance.OnLoaded(_provider);
-            return instance;
+            return _serviceInstances.GetOrAdd(name, instance);
         }
 
         throw new InvalidOperationException($"Service plugin {name} not loaded");
+    }
+
+    private IServicePlugin CreateServicePluginInstance(Type type)
+    {
+        if (_provider.GetService(type) is IServicePlugin pluginFromProvider)
+        {
+            return pluginFromProvider;
+        }
+
+        return (IServicePlugin)CreateInstanceWithFallback(type)!;
     }
 
     private object? CreateInstanceWithFallback(Type type)
@@ -316,21 +330,12 @@ public class PluginManager
             foreach (var pType in paramTypes)
             {
                 // Find a loaded service plugin whose concrete type matches this parameter
-                var match = _services.Values.FirstOrDefault(s => pType.IsAssignableFrom(s.ServiceType));
-                if (match.ServiceType != null)
+                var match = _services.FirstOrDefault(s => pType.IsAssignableFrom(s.Value.ServiceType));
+                if (!string.IsNullOrEmpty(match.Key))
                 {
                     try
                     {
-                        var svcInstance = CreateInstanceWithFallback(match.ServiceType);
-                        if (svcInstance is IServicePlugin svcPlugin)
-                        {
-                            svcPlugin.OnLoaded(_provider);
-                            extras.Add(svcPlugin);
-                        }
-                        else if (svcInstance != null)
-                        {
-                            extras.Add(svcInstance);
-                        }
+                        extras.Add(GetService(match.Key));
                     }
                     catch
                     {
@@ -397,6 +402,10 @@ public class PluginManager
         {
             contexts.Add(kv.Value.Context);
             _services.TryRemove(kv.Key, out _);
+            if (_serviceInstances.TryRemove(kv.Key, out var instance))
+            {
+                (instance as IDisposable)?.Dispose();
+            }
         }
 
         _assemblies.TryRemove(assemblyPath, out _);
@@ -417,11 +426,13 @@ public class PluginManager
 
         _handlers.Clear();
         _services.Clear();
+        foreach (var instance in _serviceInstances.Values)
+        {
+            (instance as IDisposable)?.Dispose();
+        }
+        _serviceInstances.Clear();
         _assemblies.Clear();
     }
 }
-
-
-
 
 

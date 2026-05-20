@@ -130,11 +130,27 @@ public class BinanceCommandHandler : CommandHandlerBase,
         return ((ICommandHandler<GetServerTimeCommand>)this).Create(payload);
     }
 
+    public override ICommand Create(string command, JsonElement payload)
+    {
+        return command switch
+        {
+            "binance-call" => ((ICommandHandler<CallEndpointCommand>)this).Create(payload),
+            "binance-server-time" => ((ICommandHandler<GetServerTimeCommand>)this).Create(payload),
+            "binance-exchange-info" => ((ICommandHandler<GetExchangeInfoCommand>)this).Create(payload),
+            "binance-ticker-price" => ((ICommandHandler<GetTickerPriceCommand>)this).Create(payload),
+            "binance-avg-price" => ((ICommandHandler<GetAveragePriceCommand>)this).Create(payload),
+            "binance-convert-get-quote" => ((ICommandHandler<GetConvertQuoteCommand>)this).Create(payload),
+            "binance-convert-accept-quote" => ((ICommandHandler<AcceptConvertQuoteCommand>)this).Create(payload),
+            "binance-convert-order-status" => ((ICommandHandler<GetConvertOrderStatusCommand>)this).Create(payload),
+            "binance-convert-trade-flow" => ((ICommandHandler<GetConvertTradeFlowCommand>)this).Create(payload),
+            _ => throw new InvalidOperationException($"Unsupported command '{command}'")
+        };
+    }
+
     public override void OnLoaded(IServiceProvider services)
     {
         base.OnLoaded(services);
     }
 }
-
 
 

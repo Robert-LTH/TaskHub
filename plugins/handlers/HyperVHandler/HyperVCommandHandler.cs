@@ -56,7 +56,17 @@ public class HyperVCommandHandler : CommandHandlerBase,
         }
         return ((ICommandHandler<CreateVmCommand>)this).Create(payload);
     }
-}
 
+    public override ICommand Create(string command, JsonElement payload)
+    {
+        return command switch
+        {
+            "hyperv-create-vm" => ((ICommandHandler<CreateVmCommand>)this).Create(payload),
+            "hyperv-create-switch" => ((ICommandHandler<CreateVSwitchCommand>)this).Create(payload),
+            "hyperv-create-vhdx" => ((ICommandHandler<CreateVhdxCommand>)this).Create(payload),
+            _ => throw new InvalidOperationException($"Unsupported command '{command}'")
+        };
+    }
+}
 
 

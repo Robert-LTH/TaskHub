@@ -8,9 +8,10 @@ using Microsoft.Extensions.Logging;
 namespace BitLockerServicePlugin;
 
 [SupportedOSPlatform("windows")]
-public class BitLockerService
+public class BitLockerService : IDisposable
 {
     private readonly ILogger<BitLockerService> _logger;
+    private readonly CancellationTokenSource _stopping = new();
     private ManagementEventWatcher? _watcher;
 
     public event Action<string, string>? KeyAvailable;
@@ -62,12 +63,23 @@ public class BitLockerService
                 }
             };
             _watcher.Start();
-            await Task.Delay(Timeout.Infinite);
+            await Task.Delay(Timeout.Infinite, _stopping.Token);
+        }
+        catch (OperationCanceledException)
+        {
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to start BitLocker watcher");
         }
     }
-}
 
+    public void Dispose()
+    {
+        _stopping.Cancel();
+        _watcher?.Stop();
+        _watcher?.Dispose();
+        _stopping.Dispose();
+        GC.SuppressFinalize(this);
+    }
+}

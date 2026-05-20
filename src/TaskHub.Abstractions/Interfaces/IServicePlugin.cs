@@ -9,3 +9,8 @@ public interface IServicePlugin
     void OnLoaded(IServiceProvider services);
     object GetService();
 }
+
+public interface IServicePlugin<out TService> : IServicePlugin
+{
+    new TService GetService();
+}

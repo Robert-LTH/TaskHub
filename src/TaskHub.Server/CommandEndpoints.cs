@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using TaskHub.Abstractions;
 
@@ -44,32 +45,28 @@ public static class CommandEndpoints
             }
             using var _ = doc;
             var root = doc.RootElement;
-            if (!root.TryGetProperty("commands", out var commandsEl) || commandsEl.ValueKind != System.Text.Json.JsonValueKind.Array)
+            if (!CommandRequestParser.TryReadCommands(root, out var commands, out var itemsJson, out var parseError))
             {
-                return Results.BadRequest();
+                return Results.BadRequest(parseError);
             }
             var signature = root.TryGetProperty("signature", out var sigEl) && sigEl.ValueKind == System.Text.Json.JsonValueKind.String ? sigEl.GetString() : null;
-            if (!verifier.Verify(commandsEl, signature))
+            var verificationElement = System.Text.Json.JsonSerializer.SerializeToElement(commands);
+            if (!verifier.Verify(verificationElement, signature))
             {
                 return Results.Unauthorized();
             }
-            TimeSpan? delay = null;
-            if (root.TryGetProperty("delay", out var delayEl))
-            {
-                if (delayEl.ValueKind == System.Text.Json.JsonValueKind.String && TimeSpan.TryParse(delayEl.GetString(), out var ts)) delay = ts; else if (delayEl.ValueKind == System.Text.Json.JsonValueKind.Number && delayEl.TryGetInt64(out var ms)) delay = TimeSpan.FromMilliseconds(ms);
-            }
-            var callbackId = root.TryGetProperty("callbackConnectionId", out var cbEl) && cbEl.ValueKind == System.Text.Json.JsonValueKind.String ? cbEl.GetString() : null;
+            var delay = CommandRequestParser.ReadDelay(root);
+            var callbackId = CommandRequestParser.ReadString(root, "callbackConnectionId");
 
             var requestedBy = context.User.Identity?.Name ?? "anonymous";
-            var itemsJson = commandsEl.GetRawText();
             string jobId;
             if (delay.HasValue)
             {
-                jobId = client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, CancellationToken.None), delay.Value);
+                jobId = client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, callbackId, null, CancellationToken.None), delay.Value);
             }
             else
             {
-                jobId = client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, CancellationToken.None));
+                jobId = client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, callbackId, null, CancellationToken.None));
             }
             logger.LogInformation("User {User} scheduled job {JobId}", requestedBy, jobId);
             var enqueueTime = DateTimeOffset.UtcNow + (delay ?? TimeSpan.Zero);
@@ -99,29 +96,25 @@ public static class CommandEndpoints
             }
             using var _ = doc;
             var root = doc.RootElement;
-            if (!root.TryGetProperty("commands", out var commandsEl) || commandsEl.ValueKind != System.Text.Json.JsonValueKind.Array)
+            if (!CommandRequestParser.TryReadCommands(root, out var commands, out var itemsJson, out var parseError))
             {
-                return Results.BadRequest();
+                return Results.BadRequest(parseError);
             }
             var signature = root.TryGetProperty("signature", out var sigEl) && sigEl.ValueKind == System.Text.Json.JsonValueKind.String ? sigEl.GetString() : null;
-            if (!verifier.Verify(commandsEl, signature))
+            var verificationElement = System.Text.Json.JsonSerializer.SerializeToElement(commands);
+            if (!verifier.Verify(verificationElement, signature))
             {
                 return Results.Unauthorized();
             }
             var cron = root.TryGetProperty("cronExpression", out var cronEl) && cronEl.ValueKind == System.Text.Json.JsonValueKind.String ? (cronEl.GetString() ?? "* * * * *") : "* * * * *";
-            var delay = TimeSpan.Zero;
-            if (root.TryGetProperty("delay", out var delayEl))
-            {
-                if (delayEl.ValueKind == System.Text.Json.JsonValueKind.String && TimeSpan.TryParse(delayEl.GetString(), out var ts)) delay = ts; else if (delayEl.ValueKind == System.Text.Json.JsonValueKind.Number && delayEl.TryGetInt64(out var ms)) delay = TimeSpan.FromMilliseconds(ms);
-            }
-            var callbackId = root.TryGetProperty("callbackConnectionId", out var cbEl) && cbEl.ValueKind == System.Text.Json.JsonValueKind.String ? cbEl.GetString() : null;
+            var delay = CommandRequestParser.ReadDelay(root) ?? TimeSpan.Zero;
+            var callbackId = CommandRequestParser.ReadString(root, "callbackConnectionId");
 
             var jobId = Guid.NewGuid().ToString();
             var requestedBy = context.User.Identity?.Name ?? "anonymous"; 
-            var itemsJson = commandsEl.GetRawText();
             client.Schedule(() => RecurringJob.AddOrUpdate<CommandExecutor>(
                 jobId,
-                exec => exec.ExecuteChain(itemsJson, requestedBy, CancellationToken.None),
+                exec => exec.ExecuteChain(itemsJson, requestedBy, callbackId, null, CancellationToken.None),
                 cron,
                 new RecurringJobOptions()),
                 delay);
@@ -151,12 +144,13 @@ public static class CommandEndpoints
             }
             using var _ = doc;
             var root = doc.RootElement;
-            if (!root.TryGetProperty("commands", out var commandsEl) || commandsEl.ValueKind != System.Text.Json.JsonValueKind.Array)
+            if (!CommandRequestParser.TryReadCommands(root, out var commands, out var itemsJson, out var parseError))
             {
-                return Results.BadRequest();
+                return Results.BadRequest(parseError);
             }
             var signature = root.TryGetProperty("signature", out var sigEl) && sigEl.ValueKind == System.Text.Json.JsonValueKind.String ? sigEl.GetString() : null;
-            if (!verifier.Verify(commandsEl, signature))
+            var verificationElement = System.Text.Json.JsonSerializer.SerializeToElement(commands);
+            if (!verifier.Verify(verificationElement, signature))
             {
                 return Results.Unauthorized();
             }
@@ -169,22 +163,17 @@ public static class CommandEndpoints
 
             client.Delete(id);
             var requestedBy = context.User.Identity?.Name ?? "anonymous";
+            var callbackId = CommandRequestParser.ReadString(root, "callbackConnectionId");
             string jobId;
-            var itemsJson2 = commandsEl.GetRawText();
-            TimeSpan? delay = null;
-            if (root.TryGetProperty("delay", out var delayEl))
-            {
-                if (delayEl.ValueKind == System.Text.Json.JsonValueKind.String && TimeSpan.TryParse(delayEl.GetString(), out var ts)) delay = ts; else if (delayEl.ValueKind == System.Text.Json.JsonValueKind.Number && delayEl.TryGetInt64(out var ms)) delay = TimeSpan.FromMilliseconds(ms);
-            }
+            var delay = CommandRequestParser.ReadDelay(root);
             if (delay.HasValue)
             {
-                jobId = client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(itemsJson2, requestedBy, CancellationToken.None), delay.Value);
+                jobId = client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, callbackId, null, CancellationToken.None), delay.Value);
             }
             else
             {
-                jobId = client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(itemsJson2, requestedBy, CancellationToken.None));
+                jobId = client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, callbackId, null, CancellationToken.None));
             }
-            var callbackId = root.TryGetProperty("callbackConnectionId", out var cbEl) && cbEl.ValueKind == System.Text.Json.JsonValueKind.String ? cbEl.GetString() : null;
             logger.LogInformation("User {User} modified job {OldJob} to new job {JobId}", requestedBy, id, jobId);
             var enqueueTime = DateTimeOffset.UtcNow + (delay ?? TimeSpan.Zero);
             return Results.Ok(new EnqueuedCommandResult(jobId, Array.Empty<ExecutedCommandResult>(), enqueueTime));
@@ -210,7 +199,7 @@ public static class CommandEndpoints
         }).RequireAuthorization("CommandExecutor")
           .Produces<CommandStatusResult>();
 
-        app.MapGet("/commands/{id}/logs", (string id, IJobLogStore store) =>
+        app.MapGet("/commands/{id}/logs", (string id, [FromServices] IJobLogStore store) =>
         {
             var logs = store.GetLogs(id);
             return logs is null ? Results.NotFound() : Results.Ok(logs);

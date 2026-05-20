@@ -83,11 +83,23 @@ public class ConfigurationManagerCommandHandler : CommandHandlerBase,
         return ((ICommandHandler<QueryCommand>)this).Create(payload);
     }
 
+    public override ICommand Create(string command, JsonElement payload)
+    {
+        return command switch
+        {
+            "cm-query" => ((ICommandHandler<QueryCommand>)this).Create(payload),
+            "cm-invoke" => ((ICommandHandler<InvokeMethodCommand>)this).Create(payload),
+            "cm-errorcode" => ((ICommandHandler<GetErrorCodeCommand>)this).Create(payload),
+            "cm-adddevice" => ((ICommandHandler<AddDeviceToCollectionCommand>)this).Create(payload),
+            "cm-adduser" => ((ICommandHandler<AddUserToCollectionCommand>)this).Create(payload),
+            _ => throw new InvalidOperationException($"Unsupported command '{command}'")
+        };
+    }
+
     public override void OnLoaded(IServiceProvider services)
     {
         base.OnLoaded(services);
     }
 }
-
 
 

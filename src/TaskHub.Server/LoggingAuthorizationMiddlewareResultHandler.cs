@@ -56,7 +56,6 @@ public class LoggingAuthorizationMiddlewareResultHandler : IAuthorizationMiddlew
             }
         }
 
-        await _defaultHandler.HandleAsync(next, context, policy, authorizeResult);
+        await _defaultHandler.HandleAsync(next, context, policy!, authorizeResult);
     }
 }
-

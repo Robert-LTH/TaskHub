@@ -41,7 +41,8 @@ public static class ScriptsEndpoints
             item.IsVerified = sigVerifier.IsAuthenticodeValid(item.Content);
             var saved = repo.CreateOrUpdate(item);
             return Results.Ok(saved);
-        }).Produces<ScriptItem>();
+        }).RequireAuthorization("ScriptAdmin")
+          .Produces<ScriptItem>();
 
         app.MapDelete("/scripts/{id}", (string id, ScriptsRepository repo) =>
         {

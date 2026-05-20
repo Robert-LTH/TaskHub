@@ -14,12 +14,15 @@ public class JobLogStore : IJobLogStore
 
     public void Append(string jobId, string message)
     {
-        var list = _logs.GetOrAdd(jobId, _ => new List<string>());
+        var list = _logs.GetOrAdd(jobId, id =>
+        {
+            _order.Enqueue(id);
+            return new List<string>();
+        });
         lock (list)
         {
             list.Add(message);
         }
-        _order.Enqueue(jobId);
         while (_order.Count > MaxJobs && _order.TryDequeue(out var oldId))
         {
             _logs.TryRemove(oldId, out _);
@@ -28,6 +31,14 @@ public class JobLogStore : IJobLogStore
 
     public IReadOnlyList<string>? GetLogs(string jobId)
     {
-        return _logs.TryGetValue(jobId, out var list) ? list.AsReadOnly() : null;
+        if (!_logs.TryGetValue(jobId, out var list))
+        {
+            return null;
+        }
+
+        lock (list)
+        {
+            return list.ToArray();
+        }
     }
 }

@@ -1,11 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
-using System.Threading;
-using Hangfire;
-using Microsoft.Extensions.DependencyInjection;
 using TaskHub.Abstractions;
-using TaskHub.Server;
 
 namespace CleanTempHandler;
 
@@ -34,15 +30,15 @@ public class CleanTempCommandHandler :
     public override ICommand Create(JsonElement payload) =>
         ((ICommandHandler<CleanTempCommand>)this).Create(payload);
 
-    public override void OnLoaded(IServiceProvider services)
+    public override ICommand Create(string command, JsonElement payload)
     {
-        base.OnLoaded(services);
-        var recurringJobs = services.GetRequiredService<IRecurringJobManager>();
-        var payload = JsonSerializer.Deserialize<JsonElement>("{ \"path\": \"C:\\\\temp22\"}");
-        recurringJobs.AddOrUpdate<CommandExecutor>(
-            "clean-temp",
-            exec => exec.Execute("clean-temp", payload, CancellationToken.None),
-            "0 */7 * * *");
+        return command switch
+        {
+            "clean-temp" => ((ICommandHandler<CleanTempCommand>)this).Create(payload),
+            "delete-folder" => ((ICommandHandler<DeleteFolderCommand>)this).Create(payload),
+            _ => throw new InvalidOperationException($"Unsupported command '{command}'")
+        };
     }
-}
 
+    public override void OnLoaded(IServiceProvider services) => base.OnLoaded(services);
+}

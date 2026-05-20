@@ -78,6 +78,27 @@ public class CommandExecutorTests
         Assert.True(sw.Elapsed >= TimeSpan.FromMilliseconds(350));
     }
 
+    [Fact]
+    public async Task ExecuteChain_WaitingCommandReceivesPreviousOutput()
+    {
+        PreviousOutputCommand.SeenPreviousOutput = null;
+        var handlers = new Dictionary<string, Type>
+        {
+            ["cmdProduce"] = typeof(ProduceOutputHandler),
+            ["cmdReadPrevious"] = typeof(PreviousOutputHandler)
+        };
+        var executor = CreateExecutor(handlers, typeof(StubService));
+        var items = new[]
+        {
+            new CommandItem("cmdProduce", JsonDocument.Parse("{}").RootElement),
+            new CommandItem("cmdReadPrevious", JsonDocument.Parse("{}").RootElement)
+        };
+
+        await executor.ExecuteChain(items, null, CancellationToken.None);
+
+        Assert.Equal("first-output", PreviousOutputCommand.SeenPreviousOutput);
+    }
+
     private class StubService : IServicePlugin
     {
         public string Name => "Stub";
@@ -140,8 +161,53 @@ public class CommandExecutorTests
         public override ICommand Create(JsonElement payload) => new DelayCommand(200, true);
         DelayCommand ICommandHandler<DelayCommand>.Create(JsonElement payload) => new DelayCommand(200, true);
     }
-}
 
+    private class ProduceOutputCommand : ICommand
+    {
+        public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+        {
+            await Task.Delay(50, cancellationToken);
+            return new OperationResult(JsonSerializer.SerializeToElement("first-output"), "success");
+        }
+    }
+
+    private class PreviousOutputCommand : ICommand
+    {
+        public static string? SeenPreviousOutput { get; set; }
+        public bool WaitForPrevious => true;
+        private readonly string? _previousOutput;
+
+        public PreviousOutputCommand(JsonElement payload)
+        {
+            if (payload.TryGetProperty("previousOutput", out var previous) && previous.ValueKind == JsonValueKind.String)
+            {
+                _previousOutput = previous.GetString();
+            }
+        }
+
+        public Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+        {
+            SeenPreviousOutput = _previousOutput;
+            return Task.FromResult(new OperationResult(JsonSerializer.SerializeToElement("done"), "success"));
+        }
+    }
+
+    private class ProduceOutputHandler : CommandHandlerBase, ICommandHandler<ProduceOutputCommand>
+    {
+        public override IReadOnlyCollection<string> Commands => new[] { "cmdProduce" };
+        public override string ServiceName => "Stub";
+        public override ICommand Create(JsonElement payload) => new ProduceOutputCommand();
+        ProduceOutputCommand ICommandHandler<ProduceOutputCommand>.Create(JsonElement payload) => new ProduceOutputCommand();
+    }
+
+    private class PreviousOutputHandler : CommandHandlerBase, ICommandHandler<PreviousOutputCommand>
+    {
+        public override IReadOnlyCollection<string> Commands => new[] { "cmdReadPrevious" };
+        public override string ServiceName => "Stub";
+        public override ICommand Create(JsonElement payload) => new PreviousOutputCommand(payload);
+        PreviousOutputCommand ICommandHandler<PreviousOutputCommand>.Create(JsonElement payload) => new PreviousOutputCommand(payload);
+    }
+}
 
 
 

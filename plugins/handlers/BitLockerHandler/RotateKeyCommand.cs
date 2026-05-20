@@ -27,7 +27,7 @@ public class RotateKeyCommand : ICommand
         {
             using var vol = new ManagementObject($"Win32_EncryptableVolume.DeviceID='{volume}'");
             // remove existing numerical passwords
-            if (vol.InvokeMethod("GetKeyProtectors", new object[] { 3, null }) is ManagementBaseObject ids &&
+            if (vol.InvokeMethod("GetKeyProtectors", new object?[] { 3, null }) is ManagementBaseObject ids &&
                 ids["VolumeKeyProtectorID"] is string[] protectors)
             {
                 foreach (var id in protectors)
@@ -36,12 +36,12 @@ public class RotateKeyCommand : ICommand
                 }
             }
             // add new numerical password
-            vol.InvokeMethod("ProtectKeyWithNumericalPassword", new object[] { Guid.NewGuid().ToString(), null });
-            if (vol.InvokeMethod("GetKeyProtectors", new object[] { 3, null }) is ManagementBaseObject newIds &&
+            vol.InvokeMethod("ProtectKeyWithNumericalPassword", new object?[] { Guid.NewGuid().ToString(), null });
+            if (vol.InvokeMethod("GetKeyProtectors", new object?[] { 3, null }) is ManagementBaseObject newIds &&
                 newIds["VolumeKeyProtectorID"] is string[] newProtectors && newProtectors.Length > 0)
             {
                 var newId = newProtectors[^1];
-                if (vol.InvokeMethod("GetKeyProtectorNumericalPassword", new object[] { newId, null }) is ManagementBaseObject pw &&
+                if (vol.InvokeMethod("GetKeyProtectorNumericalPassword", new object?[] { newId, null }) is ManagementBaseObject pw &&
                     pw["NumericalPassword"] is string k)
                 {
                     key = k;

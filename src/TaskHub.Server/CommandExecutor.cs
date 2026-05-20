@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Hangfire.Server;
 using TaskHub.Abstractions;
 using Microsoft.Extensions.Logging;
 
@@ -55,7 +56,7 @@ public class CommandExecutor
 
     public IReadOnlyList<ExecutedCommandResult>? GetHistory(string jobId)
     {
-        return _history.TryRemove(jobId, out var list) ? list : null;
+        return _history.TryGetValue(jobId, out var list) ? list : null;
     }
 
     private async Task<(OperationResult Result, string? Version)> ExecuteInternal(string command, JsonElement payload, CancellationToken token)
@@ -74,7 +75,8 @@ public class CommandExecutor
 
         var service = _manager.GetService(handler.ServiceName);
         var effectivePayload = ResolvePayload(command, payload);
-        var result = await handler.ExecuteAsync(effectivePayload, service, _logger, token);
+        var commandInstance = handler.Create(command, effectivePayload);
+        var result = await commandInstance.ExecuteAsync(service, _logger, token);
         var version = _manager.GetHandlerVersion(command);
         return (result, version);
     }
@@ -130,122 +132,8 @@ public class CommandExecutor
 
     public async Task<OperationResult> ExecuteChain(IEnumerable<string> commands, JsonElement payload, string? requestedBy, CancellationToken token)
     {
-        var _logger = _loggerFactory.CreateLogger("CommandExecutor");
-        var commandList = commands as string[] ?? commands.ToArray();
-        var jobId = Guid.NewGuid().ToString();
-        _logger.LogInformation("Job {JobId} started for user {User} with commands {Commands}", jobId, requestedBy ?? "unknown", string.Join(", ", commandList));
-
-        var originalPayload = payload;
-        var current = NullElement; // previous command output; null for first command
-        var results = new List<ExecutedCommandResult>();
-        OperationResult lastResult = new OperationResult(null, "success");
-        var running = new List<Task<(ExecutedCommandResult Record, OperationResult Result)>>();
-
-        async Task DrainAsync()
-        {
-            if (running.Count == 0) return;
-            var finished = await Task.WhenAll(running);
-            foreach (var item in finished)
-            {
-                results.Add(item.Record);
-                try
-                {
-                    var resText = item.Result.Result;
-                    if (!string.Equals(resText, "success", StringComparison.OrdinalIgnoreCase) &&
-                        !string.Equals(resText, "ok", StringComparison.OrdinalIgnoreCase))
-                    {
-                        // Latch the first failure to drive final status
-                        if (string.Equals(lastResult.Result, "success", StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(lastResult.Result, "ok", StringComparison.OrdinalIgnoreCase))
-                        {
-                            lastResult = item.Result;
-                        }
-                    }
-                }
-                catch { }
-            }
-            var last = finished[^1];
-            if (string.Equals(lastResult.Result, "success", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(lastResult.Result, "ok", StringComparison.OrdinalIgnoreCase))
-            {
-                lastResult = last.Result;
-            }
-            current = last.Record.Output;
-            running.Clear();
-        }
-
-        foreach (var command in commandList)
-        {
-            var handler = _manager.GetHandler(command);
-            if (handler == null)
-            {
-                await DrainAsync();
-                var ranAtMissing = DateTimeOffset.UtcNow;
-                var missing = new ExecutedCommandResult(command, ranAtMissing, NullElement, null);
-                results.Add(missing);
-                lastResult = new OperationResult(null, $"Handler {command} not found.");
-                current = NullElement;
-                continue;
-            }
-
-            if (handler is IServiceProviderAware aware)
-            {
-                aware.SetServiceProvider(_manager.RootServices);
-            }
-
-            var service = _manager.GetService(handler.ServiceName);
-            var merged = BuildCommandPayload(command, originalPayload, current, lastResult);
-            var cmd = handler.Create(merged);
-            var version = _manager.GetHandlerVersion(command);
-
-            if (cmd.WaitForPrevious)
-            {
-                await DrainAsync();
-            }
-
-            running.Add(Task.Run(async () =>
-            {
-                var ranAt = DateTimeOffset.UtcNow;
-                var jobLogger = new JobConsoleLogger(_logger, command, jobId, _logStore, _logPublishers, LookupCallback);
-                var result = await handler.ExecuteAsync(merged, service, jobLogger, token);
-                var output = result.Payload ?? NullElement;
-                return (new ExecutedCommandResult(command, ranAt, output, version), result);
-            }, token));
-        }
-
-        await DrainAsync();
-
-        _history[jobId] = results;
-        _historyOrder.Enqueue(jobId);
-        while (_historyOrder.Count > MaxHistoryEntries && _historyOrder.TryDequeue(out var oldId))
-        {
-            _history.TryRemove(oldId, out _);
-        }
-
-        var statusResult = new CommandStatusResult(jobId, lastResult.Result, results.ToArray());
-        var callbackId = GetCallback(jobId);
-        foreach (var publisher in _publishers)
-        {
-            try
-            {
-                await publisher.PublishResultAsync(statusResult, callbackId, token);
-            }
-            catch
-            {
-                // ignore publishing errors to avoid failing the job
-            }
-        }
-
-        _logger.LogInformation("Job {JobId} finished for user {User} with result {Result}", jobId, requestedBy ?? "unknown", lastResult.Result);
-
-        var status = lastResult.Result?.ToLowerInvariant();
-        if (!string.Equals(status, "success", StringComparison.OrdinalIgnoreCase) &&
-            !string.Equals(status, "ok", StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException(lastResult.Result);
-        }
-
-        return lastResult;
+        var items = commands.Select(command => new CommandItem(command, payload.Clone())).ToArray();
+        return await ExecuteChainCore(items, requestedBy, null, null, token);
     }
 
     // Overload that accepts JSON text to ensure payload survives background job serialization.
@@ -258,9 +146,44 @@ public class CommandExecutor
     // New API: execute per-item commands with individual payloads
     public async Task<OperationResult> ExecuteChain(IEnumerable<CommandItem> items, string? requestedBy, CancellationToken token)
     {
-        var _logger = _loggerFactory.CreateLogger("CommandExecutor");
         var list = items as CommandItem[] ?? items.ToArray();
-        var jobId = Guid.NewGuid().ToString();
+        return await ExecuteChainCore(list, requestedBy, null, null, token);
+    }
+
+    // Stringified variant for background job serialization safety
+    public async Task<OperationResult> ExecuteChain(string itemsJson, string? requestedBy, CancellationToken token)
+    {
+        return await ExecuteChain(itemsJson, requestedBy, null, null, token);
+    }
+
+    public async Task<OperationResult> ExecuteChain(
+        string itemsJson,
+        string? requestedBy,
+        string? callbackConnectionId,
+        PerformContext? performContext,
+        CancellationToken token)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(string.IsNullOrEmpty(itemsJson) ? "[]" : itemsJson);
+            var items = doc.RootElement.Deserialize<CommandItem[]>() ?? Array.Empty<CommandItem>();
+            return await ExecuteChainCore(items, requestedBy, callbackConnectionId, performContext?.BackgroundJob?.Id, token);
+        }
+        catch
+        {
+            return new OperationResult(null, "invalid-items-json");
+        }
+    }
+
+    private async Task<OperationResult> ExecuteChainCore(
+        IReadOnlyList<CommandItem> list,
+        string? requestedBy,
+        string? callbackConnectionId,
+        string? externalJobId,
+        CancellationToken token)
+    {
+        var _logger = _loggerFactory.CreateLogger("CommandExecutor");
+        var jobId = string.IsNullOrWhiteSpace(externalJobId) ? Guid.NewGuid().ToString() : externalJobId!;
         _logger.LogInformation("Job {JobId} started for user {User} with commands {Commands}", jobId, requestedBy ?? "unknown", string.Join(", ", list.Select(i => i.Command)));
 
         JsonElement previous = NullElement;
@@ -320,36 +243,26 @@ public class CommandExecutor
             }
 
             var service = _manager.GetService(handler.ServiceName);
-            JsonElement payloadElement;
-            try
-            {
-                if (item.Payload is JsonElement je)
-                {
-                    payloadElement = je;
-                }
-                else
-                {
-                    payloadElement = JsonSerializer.SerializeToElement(item.Payload ?? new object());
-                }
-            }
-            catch
-            {
-                payloadElement = NullElement;
-            }
+            var payloadElement = ToJsonElement(item.Payload);
             var merged = BuildCommandPayload(item.Command, payloadElement, previous, lastResult);
-            var cmd = handler.Create(merged);
+            var cmd = handler.Create(item.Command, merged);
             var version = _manager.GetHandlerVersion(item.Command);
 
             if (cmd.WaitForPrevious)
             {
                 await DrainAsync();
+                merged = BuildCommandPayload(item.Command, payloadElement, previous, lastResult);
+                cmd = handler.Create(item.Command, merged);
             }
 
             running.Add(Task.Run(async () =>
             {
                 var ranAt = DateTimeOffset.UtcNow;
-                var jobLogger = new JobConsoleLogger(_logger, item.Command, jobId, _logStore, _logPublishers, LookupCallback);
-                var result = await handler.ExecuteAsync(merged, service, jobLogger, token);
+                Func<string, string?> callbackAccessor = callbackConnectionId is null
+                    ? LookupCallback
+                    : _ => callbackConnectionId;
+                var jobLogger = new JobConsoleLogger(_logger, item.Command, jobId, _logStore, _logPublishers, callbackAccessor);
+                var result = await cmd.ExecuteAsync(service, jobLogger, token);
                 var output = result.Payload ?? NullElement;
                 return (new ExecutedCommandResult(item.Command, ranAt, output, version), result);
             }, token));
@@ -357,15 +270,10 @@ public class CommandExecutor
 
         await DrainAsync();
 
-        _history[jobId] = results;
-        _historyOrder.Enqueue(jobId);
-        while (_historyOrder.Count > MaxHistoryEntries && _historyOrder.TryDequeue(out var oldId))
-        {
-            _history.TryRemove(oldId, out _);
-        }
+        StoreHistory(jobId, results);
 
         var statusResult = new CommandStatusResult(jobId, lastResult.Result, results.ToArray());
-        var callbackId = GetCallback(jobId);
+        var callbackId = callbackConnectionId ?? GetCallback(jobId);
         foreach (var publisher in _publishers)
         {
             try
@@ -387,18 +295,27 @@ public class CommandExecutor
         return lastResult;
     }
 
-    // Stringified variant for background job serialization safety
-    public async Task<OperationResult> ExecuteChain(string itemsJson, string? requestedBy, CancellationToken token)
+    private static JsonElement ToJsonElement(object? payload)
     {
         try
         {
-            using var doc = JsonDocument.Parse(string.IsNullOrEmpty(itemsJson) ? "[]" : itemsJson);
-            var items = doc.RootElement.Deserialize<CommandItem[]>() ?? Array.Empty<CommandItem>();
-            return await ExecuteChain(items, requestedBy, token);
+            return payload is JsonElement jsonElement
+                ? jsonElement.Clone()
+                : JsonSerializer.SerializeToElement(payload ?? new object());
         }
         catch
         {
-            return new OperationResult(null, "invalid-items-json");
+            return NullElement;
+        }
+    }
+
+    private void StoreHistory(string jobId, List<ExecutedCommandResult> results)
+    {
+        _history[jobId] = results;
+        _historyOrder.Enqueue(jobId);
+        while (_historyOrder.Count > MaxHistoryEntries && _historyOrder.TryDequeue(out var oldId))
+        {
+            _history.TryRemove(oldId, out _);
         }
     }
 
@@ -451,4 +368,3 @@ public class CommandExecutor
         }
     }
 }
-

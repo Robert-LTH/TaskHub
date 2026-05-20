@@ -113,29 +113,36 @@ public class WebSocketJobService : BackgroundService, IResultPublisher, ILogPubl
 
                 try
                 {
-                    var request = JsonSerializer.Deserialize<CommandChainRequest>(message);
-                    if (request != null)
+                    using var doc = JsonDocument.Parse(message);
+                    var root = doc.RootElement;
+                    if (CommandRequestParser.TryReadCommands(root, out var commands, out var itemsJson, out var parseError))
                     {
-                        var verifyElement = JsonSerializer.SerializeToElement(request.Commands);
-                        if (_verifier.Verify(verifyElement, request.Signature))
+                        var verifyElement = JsonSerializer.SerializeToElement(commands);
+                        var signature = CommandRequestParser.ReadString(root, "signature");
+                        if (_verifier.Verify(verifyElement, signature))
                         {
-                            var requestedBy = request.RequestedBy;
+                            var requestedBy = CommandRequestParser.ReadString(root, "requestedBy");
+                            var callbackId = CommandRequestParser.ReadString(root, "callbackConnectionId");
                             string jobId;
-                            var itemsJson = JsonSerializer.Serialize(request.Commands);
-                            if (request.Delay.HasValue)
+                            var delay = CommandRequestParser.ReadDelay(root);
+                            if (delay.HasValue)
                             {
-                                jobId = _client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, CancellationToken.None), request.Delay.Value);
+                                jobId = _client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, callbackId, null, CancellationToken.None), delay.Value);
                             }
                             else
                             {
-                                jobId = _client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, CancellationToken.None));
+                                jobId = _client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, callbackId, null, CancellationToken.None));
                             }
-                            _logger.LogInformation("WebSocket user {User} scheduled job {JobId} for commands {Commands}", requestedBy ?? "unknown", jobId, string.Join(", ", System.Linq.Enumerable.Select(request.Commands, c => c.Command)));
+                            _logger.LogInformation("WebSocket user {User} scheduled job {JobId} for commands {Commands}", requestedBy ?? "unknown", jobId, string.Join(", ", System.Linq.Enumerable.Select(commands, c => c.Command)));
                         }
                         else
                         {
                             _logger.LogWarning("Invalid payload signature: {Message}", message);
                         }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Invalid job message: {Error}", parseError);
                     }
                 }
                 catch (Exception ex)
@@ -158,4 +165,3 @@ public class WebSocketJobService : BackgroundService, IResultPublisher, ILogPubl
         }
     }
 }
-
