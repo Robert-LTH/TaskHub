@@ -103,7 +103,7 @@ flowchart LR
 
 ### Command Execution
 
-`POST /commands`, `POST /commands/recurring`, and `PUT /commands/{id}` parse a command chain, verify the optional signature, and enqueue or schedule a Hangfire job. In WebSocket mode, the same parsing and verification happens inside `WebSocketJobService`; the local `/commands` endpoints are not mapped.
+`POST /commands`, `POST /commands/recurring`, and `PUT /commands/{id}` parse a command chain and verify the optional signature. API `POST /commands` requests without a delay execute immediately and return the command result. Delayed, recurring, modified, and WebSocket-mode command requests enqueue or schedule a Hangfire job. In WebSocket mode, the same parsing and verification happens inside `WebSocketJobService`; the local `/commands` endpoints are not mapped.
 
 ```mermaid
 sequenceDiagram
@@ -160,7 +160,7 @@ Notes:
 - `delay` can be a `TimeSpan` string or a number of milliseconds.
 - `signature` is verified over the parsed command-item array. If no certificate is configured and verification is not required, unsigned requests are accepted.
 - Each command payload receives `previousOutput` and `previousResult`. Commands can set `ICommand.WaitForPrevious` to force all earlier running commands to finish before the command starts.
-- Successful command output and handler version are stored in in-memory history for `/commands/{id}`.
+- Successful command output, handler version, and command result/error text are returned to API callers and stored in in-memory history for `/commands/{id}` when available.
 
 ### WebSocket Mode
 
@@ -193,7 +193,7 @@ PowerShell scripts are stored in `data/scripts.json` through `/scripts` endpoint
 - `GET /hangfire` - Hangfire dashboard protected by the `CommandExecutor` policy and optional basic auth.
 - `GET /dlls` - loaded plugin assembly paths.
 - `GET /commands/available` - loaded command metadata.
-- `POST /commands` - enqueue or schedule a command chain.
+- `POST /commands` - execute an immediate command chain, or schedule it when `delay` is set.
 - `POST /commands/recurring` - create a delayed recurring Hangfire job registration.
 - `PUT /commands/{id}` - delete an existing job and schedule a replacement.
 - `POST /commands/{id}/cancel` - delete a queued or scheduled job.

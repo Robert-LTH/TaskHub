@@ -10,5 +10,10 @@ namespace TaskHub.Abstractions;
 /// <param name="RanAt">Timestamp when the command was executed.</param>
 /// <param name="Output">Output returned by the command.</param>
 /// <param name="PluginVersion">Version of the plugin that handled the command.</param>
-public record ExecutedCommandResult(string Command, DateTimeOffset RanAt, JsonElement Output, string? PluginVersion = null);
-
+/// <param name="Result">"success" or an error message returned by the command.</param>
+public record ExecutedCommandResult(
+    string Command,
+    DateTimeOffset RanAt,
+    JsonElement Output,
+    string? PluginVersion = null,
+    string Result = "success");

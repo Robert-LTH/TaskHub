@@ -59,20 +59,20 @@ public static class CommandEndpoints
             var callbackId = CommandRequestParser.ReadString(root, "callbackConnectionId");
 
             var requestedBy = context.User.Identity?.Name ?? "anonymous";
-            string jobId;
             if (delay.HasValue)
             {
-                jobId = client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, callbackId, null, CancellationToken.None), delay.Value);
+                var jobId = client.Schedule<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, callbackId, null, CancellationToken.None), delay.Value);
+                logger.LogInformation("User {User} scheduled job {JobId}", requestedBy, jobId);
+                var enqueueTime = DateTimeOffset.UtcNow + delay.Value;
+                return Results.Ok(new EnqueuedCommandResult(jobId, Array.Empty<ExecutedCommandResult>(), enqueueTime));
             }
-            else
-            {
-                jobId = client.Enqueue<CommandExecutor>(exec => exec.ExecuteChain(itemsJson, requestedBy, callbackId, null, CancellationToken.None));
-            }
-            logger.LogInformation("User {User} scheduled job {JobId}", requestedBy, jobId);
-            var enqueueTime = DateTimeOffset.UtcNow + (delay ?? TimeSpan.Zero);
-            return Results.Ok(new EnqueuedCommandResult(jobId, Array.Empty<ExecutedCommandResult>(), enqueueTime));
+
+            var result = await executor.ExecuteChainForApi(itemsJson, requestedBy, callbackId, context.RequestAborted);
+            logger.LogInformation("User {User} executed command request {JobId} with result {Result}", requestedBy, result.Id, result.Status);
+            return Results.Ok(result);
         }).RequireAuthorization("CommandExecutor")
             .Accepts<CommandChainRequest>("application/json")
+          .Produces<CommandStatusResult>()
           .Produces<EnqueuedCommandResult>();
 
         app.MapPost("/commands/recurring", async (HttpRequest httpRequest, IBackgroundJobClient client, PayloadVerifier verifier, HttpContext context, ILoggerFactory loggerFactory, CommandExecutor executor) =>

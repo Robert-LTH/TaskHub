@@ -30,6 +30,8 @@ public class CommandExecutor
 
     private readonly ConcurrentDictionary<string, string?> _callbacks = new();
 
+    private sealed record CommandExecutionSummary(OperationResult LastResult, CommandStatusResult StatusResult);
+
     public CommandExecutor(PluginManager manager, IEnumerable<IResultPublisher> publishers, ILoggerFactory loggerFactory,
         ScriptsRepository scripts, IJobLogStore logStore, IEnumerable<ILogPublisher> logPublishers, IConfiguration? configuration = null)
     {
@@ -141,7 +143,8 @@ public class CommandExecutor
     public async Task<OperationResult> ExecuteChain(IEnumerable<string> commands, JsonElement payload, string? requestedBy, CancellationToken token)
     {
         var items = commands.Select(command => new CommandItem(command, payload.Clone())).ToArray();
-        return await ExecuteChainCore(items, requestedBy, null, null, token);
+        var summary = await ExecuteChainCore(items, requestedBy, null, null, true, token);
+        return summary.LastResult;
     }
 
     // Overload that accepts JSON text to ensure payload survives background job serialization.
@@ -155,7 +158,8 @@ public class CommandExecutor
     public async Task<OperationResult> ExecuteChain(IEnumerable<CommandItem> items, string? requestedBy, CancellationToken token)
     {
         var list = items as CommandItem[] ?? items.ToArray();
-        return await ExecuteChainCore(list, requestedBy, null, null, token);
+        var summary = await ExecuteChainCore(list, requestedBy, null, null, true, token);
+        return summary.LastResult;
     }
 
     // Stringified variant for background job serialization safety
@@ -175,19 +179,48 @@ public class CommandExecutor
         {
             using var doc = JsonDocument.Parse(string.IsNullOrEmpty(itemsJson) ? "[]" : itemsJson);
             var items = doc.RootElement.Deserialize<CommandItem[]>() ?? Array.Empty<CommandItem>();
-            return await ExecuteChainCore(items, requestedBy, callbackConnectionId, performContext?.BackgroundJob?.Id, token);
+            var summary = await ExecuteChainCore(items, requestedBy, callbackConnectionId, performContext?.BackgroundJob?.Id, true, token);
+            return summary.LastResult;
         }
-        catch
+        catch (JsonException)
         {
             return new OperationResult(null, "invalid-items-json");
         }
     }
 
-    private async Task<OperationResult> ExecuteChainCore(
+    public async Task<CommandStatusResult> ExecuteChainForApi(
+        string itemsJson,
+        string? requestedBy,
+        string? callbackConnectionId,
+        CancellationToken token)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(string.IsNullOrEmpty(itemsJson) ? "[]" : itemsJson);
+            var items = doc.RootElement.Deserialize<CommandItem[]>() ?? Array.Empty<CommandItem>();
+            var summary = await ExecuteChainCore(items, requestedBy, callbackConnectionId, null, false, token);
+            return summary.StatusResult;
+        }
+        catch (JsonException)
+        {
+            return new CommandStatusResult(Guid.NewGuid().ToString(), "invalid-items-json", Array.Empty<ExecutedCommandResult>());
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            return new CommandStatusResult(Guid.NewGuid().ToString(), ex.Message, Array.Empty<ExecutedCommandResult>());
+        }
+    }
+
+    private async Task<CommandExecutionSummary> ExecuteChainCore(
         IReadOnlyList<CommandItem> list,
         string? requestedBy,
         string? callbackConnectionId,
         string? externalJobId,
+        bool throwOnError,
         CancellationToken token)
     {
         var _logger = _loggerFactory.CreateLogger("CommandExecutor");
@@ -238,9 +271,9 @@ public class CommandExecutor
             {
                 await DrainAsync();
                 var ranAtMissing = DateTimeOffset.UtcNow;
-                var missing = new ExecutedCommandResult(item.Command, ranAtMissing, NullElement, null);
-                results.Add(missing);
                 lastResult = new OperationResult(null, $"Handler {item.Command} not found.");
+                var missing = new ExecutedCommandResult(item.Command, ranAtMissing, NullElement, null, lastResult.Result);
+                results.Add(missing);
                 previous = NullElement;
                 continue;
             }
@@ -249,9 +282,9 @@ public class CommandExecutor
             {
                 await DrainAsync();
                 var ranAtMismatch = DateTimeOffset.UtcNow;
-                var mismatch = new ExecutedCommandResult(item.Command, ranAtMismatch, NullElement, _manager.GetHandlerVersion(item.Command));
-                results.Add(mismatch);
                 lastResult = new OperationResult(null, BuildExecutionContextMismatchMessage(item.Command, handler.ExecutionContext));
+                var mismatch = new ExecutedCommandResult(item.Command, ranAtMismatch, NullElement, _manager.GetHandlerVersion(item.Command), lastResult.Result);
+                results.Add(mismatch);
                 previous = NullElement;
                 continue;
             }
@@ -281,9 +314,23 @@ public class CommandExecutor
                     ? LookupCallback
                     : _ => callbackConnectionId;
                 var jobLogger = new JobConsoleLogger(_logger, item.Command, jobId, _logStore, _logPublishers, callbackAccessor);
-                var result = await cmd.ExecuteAsync(service, jobLogger, token);
-                var output = result.Payload ?? NullElement;
-                return (new ExecutedCommandResult(item.Command, ranAt, output, version), result);
+                try
+                {
+                    var result = await cmd.ExecuteAsync(service, jobLogger, token);
+                    var output = result.Payload ?? NullElement;
+                    return (new ExecutedCommandResult(item.Command, ranAt, output, version, result.Result), result);
+                }
+                catch (OperationCanceledException) when (token.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    jobLogger.LogError(ex, "Command {Command} failed", item.Command);
+                    var error = $"Command {item.Command} failed: {ex.Message}";
+                    var result = new OperationResult(null, error);
+                    return (new ExecutedCommandResult(item.Command, ranAt, NullElement, version, result.Result), result);
+                }
             }, token));
         }
 
@@ -305,13 +352,14 @@ public class CommandExecutor
         _logger.LogInformation("Job {JobId} finished for user {User} with result {Result}", jobId, requestedBy ?? "unknown", lastResult.Result);
 
         var status2 = lastResult.Result?.ToLowerInvariant();
-        if (!string.Equals(status2, "success", StringComparison.OrdinalIgnoreCase) &&
+        if (throwOnError &&
+            !string.Equals(status2, "success", StringComparison.OrdinalIgnoreCase) &&
             !string.Equals(status2, "ok", StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException(lastResult.Result);
         }
 
-        return lastResult;
+        return new CommandExecutionSummary(lastResult, statusResult);
     }
 
     private static JsonElement ToJsonElement(object? payload)
