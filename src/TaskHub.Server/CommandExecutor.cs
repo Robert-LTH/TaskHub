@@ -81,7 +81,7 @@ public class CommandExecutor
             aware.SetServiceProvider(_manager.RootServices);
         }
 
-        var service = _manager.GetService(handler.ServiceName);
+        var service = GetService(handler);
         var effectivePayload = ResolvePayload(command, payload);
         var commandInstance = handler.Create(command, effectivePayload);
         var result = await commandInstance.ExecuteAsync(service, _logger, token);
@@ -261,7 +261,7 @@ public class CommandExecutor
                 aware.SetServiceProvider(_manager.RootServices);
             }
 
-            var service = _manager.GetService(handler.ServiceName);
+            var service = GetService(handler);
             var payloadElement = ToJsonElement(item.Payload);
             var merged = BuildCommandPayload(item.Command, payloadElement, previous, lastResult);
             var cmd = handler.Create(item.Command, merged);
@@ -344,6 +344,11 @@ public class CommandExecutor
     private string BuildExecutionContextMismatchMessage(string command, CommandExecutionContext handlerContext) =>
         $"Handler {command} requires {handlerContext} execution context but this runner is {_executionContext}.";
 
+    private IServicePlugin GetService(ICommandHandler handler) =>
+        string.IsNullOrWhiteSpace(handler.ServiceName)
+            ? NoServicePlugin.Instance
+            : _manager.GetService(handler.ServiceName);
+
     private JsonElement BuildCommandPayload(string command, JsonElement originalPayload, JsonElement previousOutput, OperationResult lastResult)
     {
         try
@@ -391,5 +396,36 @@ public class CommandExecutor
             // On any failure, fall back to original payload to avoid breaking commands
             return originalPayload;
         }
+    }
+
+    private sealed class NoServicePlugin : IServicePlugin
+    {
+        public static readonly NoServicePlugin Instance = new();
+
+        private NoServicePlugin()
+        {
+        }
+
+        public string Name => string.Empty;
+
+        public IServiceProvider Services { get; private set; } = EmptyServiceProvider.Instance;
+
+        public void OnLoaded(IServiceProvider services)
+        {
+            Services = services;
+        }
+
+        public object GetService() => this;
+    }
+
+    private sealed class EmptyServiceProvider : IServiceProvider
+    {
+        public static readonly EmptyServiceProvider Instance = new();
+
+        private EmptyServiceProvider()
+        {
+        }
+
+        public object? GetService(Type serviceType) => null;
     }
 }

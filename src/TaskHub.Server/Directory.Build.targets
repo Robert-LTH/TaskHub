@@ -1,9 +1,25 @@
 <Project>
+  <PropertyGroup>
+    <TaskHubRoot>$(MSBuildThisFileDirectory)..\..\</TaskHubRoot>
+  </PropertyGroup>
+
   <ItemGroup>
-    <PluginOutput Include="$(SolutionDir)src\plugins\**\*.*" />
+    <PluginProject Include="$(TaskHubRoot)plugins\handlers\*\*.csproj" />
+    <PluginProject Include="$(TaskHubRoot)plugins\services\*\*.csproj" />
   </ItemGroup>
 
+  <Target Name="BuildPlugins" BeforeTargets="CopyPlugins">
+    <MSBuild Projects="@(PluginProject)"
+             Targets="Build"
+             Properties="Configuration=$(Configuration);Platform=$(Platform)"
+             BuildInParallel="true" />
+  </Target>
+
   <Target Name="CopyPlugins" AfterTargets="Build">
+    <ItemGroup>
+      <PluginOutput Include="$(TaskHubRoot)src\plugins\**\*.*" />
+    </ItemGroup>
+
     <Copy SourceFiles="@(PluginOutput)"
           DestinationFiles="@(PluginOutput->'$(OutDir)plugins\%(RecursiveDir)%(Filename)%(Extension)')"
           SkipUnchangedFiles="true" />

@@ -1,6 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Drawing;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,7 +19,7 @@ public class PopupCommandHandlerTests
 
         Assert.Contains("popup-show", handler.Commands);
         Assert.Contains("show-popup", handler.Commands);
-        Assert.Equal("powershell", handler.ServiceName);
+        Assert.Equal(string.Empty, handler.ServiceName);
         Assert.Equal(CommandExecutionContext.RegularUser, handler.ExecutionContext);
     }
 
@@ -49,24 +48,36 @@ public class PopupCommandHandlerTests
     }
 
     [Fact]
-    public void BuildPopupScriptPositionsFormAtLowerRight()
+    public void NormalizeAppliesDefaultsAndBounds()
     {
-        var script = ShowPopupCommand.BuildPopupScript(new ShowPopupRequest
+        var options = ShowPopupCommand.Normalize(new ShowPopupRequest
         {
-            Title = "O'Hare",
+            Title = "",
             Message = "Task finished",
-            Width = 420,
-            Height = 180,
-            Margin = 24
+            DurationMilliseconds = 10,
+            Width = 1000,
+            Height = 10,
+            Margin = 500
         });
 
-        Assert.Contains("Add-Type -ReferencedAssemblies @('System.Windows.Forms', 'System.Drawing')", script);
-        Assert.Contains("popupThread.SetApartmentState(ApartmentState.STA)", script);
-        Assert.Contains("$popupMargin = 24", script);
-        Assert.Contains("workingArea.Right - form.Width - margin", script);
-        Assert.Contains("workingArea.Bottom - form.Height - margin", script);
-        Assert.Contains("form.TopMost = true", script);
-        Assert.Contains("$popupTitle = 'O''Hare'", script);
+        Assert.Equal("TaskHub", options.Title);
+        Assert.Equal("Task finished", options.Message);
+        Assert.Equal(500, options.DurationMilliseconds);
+        Assert.Equal(800, options.Width);
+        Assert.Equal(100, options.Height);
+        Assert.Equal(120, options.Margin);
+    }
+
+    [Fact]
+    public void CalculateLowerRightLocationUsesWorkingAreaBottomRight()
+    {
+        var location = ShowPopupCommand.CalculateLowerRightLocation(
+            new Rectangle(10, 20, 1000, 800),
+            width: 360,
+            height: 140,
+            margin: 16);
+
+        Assert.Equal(new Point(634, 664), location);
     }
 
     [Fact]
@@ -74,15 +85,15 @@ public class PopupCommandHandlerTests
     {
         var command = new ShowPopupCommand(new ShowPopupRequest());
 
-        var result = await command.ExecuteAsync(new FakePowerShellPlugin(), NullLogger.Instance, CancellationToken.None);
+        var result = await command.ExecuteAsync(new FakeServicePlugin(), NullLogger.Instance, CancellationToken.None);
 
         Assert.Null(result.Payload);
         Assert.Equal("message is required", result.Result);
     }
 
-    private sealed class FakePowerShellPlugin : IServicePlugin
+    private sealed class FakeServicePlugin : IServicePlugin
     {
-        public string Name => "powershell";
+        public string Name => string.Empty;
 
         public IServiceProvider Services { get; private set; } = default!;
 
@@ -91,20 +102,6 @@ public class PopupCommandHandlerTests
             Services = services;
         }
 
-        public object GetService() => new FakePowerShellService();
-    }
-
-    private sealed class FakePowerShellService
-    {
-        public OperationResult Execute(string scriptBase64, string version = null, Dictionary<string, object> properties = null)
-        {
-            var script = Encoding.UTF8.GetString(Convert.FromBase64String(scriptBase64));
-            var payload = JsonSerializer.SerializeToElement(new
-            {
-                script
-            });
-
-            return new OperationResult(payload, "success");
-        }
+        public object GetService() => AppDomain.CurrentDomain;
     }
 }

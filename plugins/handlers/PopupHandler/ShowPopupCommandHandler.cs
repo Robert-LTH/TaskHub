@@ -8,7 +8,7 @@ public class ShowPopupCommandHandler : CommandHandlerBase, ICommandHandler<ShowP
 {
     public override IReadOnlyCollection<string> Commands => new[] { "popup-show", "show-popup" };
 
-    public override string ServiceName => "powershell";
+    public override string ServiceName => string.Empty;
 
     public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUser;
 
