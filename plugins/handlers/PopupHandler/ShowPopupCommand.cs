@@ -1,12 +1,11 @@
 using System;
 using System.Drawing;
-using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using Microsoft.Extensions.Logging;
 using TaskHub.Abstractions;
 
@@ -78,29 +77,26 @@ public class ShowPopupCommand : ICommand
         {
             try
             {
-                var formsAssembly = Assembly.Load("System.Windows.Forms");
-                var drawingAssembly = LoadDrawingAssembly();
-
-                InvokeStatic(formsAssembly, "System.Windows.Forms.Application", "EnableVisualStyles");
-
-                using var form = (IDisposable)CreateForm(formsAssembly, drawingAssembly, options);
-                using var timer = (IDisposable)CreateInstance(formsAssembly, "System.Windows.Forms.Timer");
-
-                SetProperty(timer, "Interval", options.DurationMilliseconds);
-
-                AddEventHandler(timer, "Tick", new EventHandler((_, _) =>
+                Application.EnableVisualStyles();
+                using var form = CreateForm(options);
+                using var timer = new System.Windows.Forms.Timer
                 {
-                    Invoke(timer, "Stop");
-                    Invoke(form, "Close");
-                }));
+                    Interval = options.DurationMilliseconds
+                };
 
-                AddEventHandler(form, "Shown", new EventHandler((_, _) =>
+                timer.Tick += (_, _) =>
                 {
-                    Invoke(timer, "Start");
-                    Invoke(form, "Activate");
-                }));
+                    timer.Stop();
+                    form.Close();
+                };
 
-                Invoke(form, "ShowDialog");
+                form.Shown += (_, _) =>
+                {
+                    timer.Start();
+                    form.Activate();
+                };
+
+                form.ShowDialog();
             }
             catch (Exception ex)
             {
@@ -118,103 +114,37 @@ public class ShowPopupCommand : ICommand
         }
     }
 
-    private static object CreateForm(Assembly formsAssembly, Assembly drawingAssembly, PopupOptions options)
+    private static Form CreateForm(PopupOptions options)
     {
-        var form = CreateInstance(formsAssembly, "System.Windows.Forms.Form");
-        SetProperty(form, "Text", options.Title);
-        SetProperty(form, "Width", options.Width);
-        SetProperty(form, "Height", options.Height);
-        SetProperty(form, "StartPosition", EnumValue(formsAssembly, "System.Windows.Forms.FormStartPosition", "Manual"));
-        SetProperty(form, "FormBorderStyle", EnumValue(formsAssembly, "System.Windows.Forms.FormBorderStyle", "FixedSingle"));
-        SetProperty(form, "MaximizeBox", false);
-        SetProperty(form, "MinimizeBox", false);
-        SetProperty(form, "ShowInTaskbar", false);
-        SetProperty(form, "TopMost", true);
-        SetProperty(form, "BackColor", GetStaticProperty(drawingAssembly, "System.Drawing.Color", "White"));
+        var form = new Form
+        {
+            Text = options.Title,
+            Width = options.Width,
+            Height = options.Height,
+            StartPosition = FormStartPosition.Manual,
+            FormBorderStyle = FormBorderStyle.FixedSingle,
+            MaximizeBox = false,
+            MinimizeBox = false,
+            ShowInTaskbar = false,
+            TopMost = true,
+            BackColor = Color.White
+        };
 
-        var label = CreateInstance(formsAssembly, "System.Windows.Forms.Label");
-        SetProperty(label, "Text", options.Message);
-        SetProperty(label, "Dock", EnumValue(formsAssembly, "System.Windows.Forms.DockStyle", "Fill"));
-        SetProperty(label, "Padding", CreateInstance(formsAssembly, "System.Windows.Forms.Padding", 14));
-        SetProperty(label, "Font", CreateInstance(drawingAssembly, "System.Drawing.Font", "Segoe UI", 10f));
-        SetProperty(label, "AutoEllipsis", true);
-        SetProperty(label, "TextAlign", EnumValue(drawingAssembly, "System.Drawing.ContentAlignment", "MiddleLeft"));
+        var label = new Label
+        {
+            Text = options.Message,
+            Dock = DockStyle.Fill,
+            Padding = new Padding(14),
+            Font = new Font("Segoe UI", 10),
+            AutoEllipsis = true,
+            TextAlign = ContentAlignment.MiddleLeft
+        };
 
-        var controls = GetProperty(form, "Controls");
-        Invoke(controls, "Add", label);
-
-        var workingArea = GetWorkingArea(formsAssembly);
-        SetProperty(form, "Location", CalculateLowerRightLocation(workingArea, options.Width, options.Height, options.Margin));
+        form.Controls.Add(label);
+        var workingArea = Screen.PrimaryScreen?.WorkingArea ?? SystemInformation.WorkingArea;
+        form.Location = CalculateLowerRightLocation(workingArea, form.Width, form.Height, options.Margin);
         return form;
     }
-
-    private static Rectangle GetWorkingArea(Assembly formsAssembly)
-    {
-        var primaryScreen = GetStaticProperty(formsAssembly, "System.Windows.Forms.Screen", "PrimaryScreen");
-        if (primaryScreen is not null)
-        {
-            return (Rectangle)GetProperty(primaryScreen, "WorkingArea")!;
-        }
-
-        return (Rectangle)GetStaticProperty(formsAssembly, "System.Windows.Forms.SystemInformation", "WorkingArea")!;
-    }
-
-    private static Assembly LoadDrawingAssembly()
-    {
-        try
-        {
-            return Assembly.Load("System.Drawing.Common");
-        }
-        catch
-        {
-            return Assembly.Load("System.Drawing");
-        }
-    }
-
-    private static object CreateInstance(Assembly assembly, string typeName, params object[] args) =>
-        Activator.CreateInstance(GetRequiredType(assembly, typeName), args)
-        ?? throw new InvalidOperationException($"Failed to create {typeName}.");
-
-    private static object? GetProperty(object target, string propertyName) =>
-        target.GetType().GetProperty(propertyName)?.GetValue(target);
-
-    private static object? GetStaticProperty(Assembly assembly, string typeName, string propertyName) =>
-        GetRequiredType(assembly, typeName).GetProperty(propertyName, BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
-
-    private static void SetProperty(object target, string propertyName, object? value) =>
-        target.GetType().GetProperty(propertyName)?.SetValue(target, value);
-
-    private static void Invoke(object? target, string methodName, params object?[] args)
-    {
-        if (target is null)
-        {
-            throw new InvalidOperationException($"Cannot invoke {methodName} on a null target.");
-        }
-
-        var method = target.GetType()
-            .GetMethods(BindingFlags.Public | BindingFlags.Instance)
-            .FirstOrDefault(candidate => candidate.Name == methodName && candidate.GetParameters().Length == args.Length);
-
-        if (method is null)
-        {
-            throw new MissingMethodException(target.GetType().FullName, methodName);
-        }
-
-        method.Invoke(target, args);
-    }
-
-    private static void InvokeStatic(Assembly assembly, string typeName, string methodName) =>
-        GetRequiredType(assembly, typeName).GetMethod(methodName, BindingFlags.Public | BindingFlags.Static)?.Invoke(null, null);
-
-    private static void AddEventHandler(object target, string eventName, EventHandler handler) =>
-        target.GetType().GetEvent(eventName)?.AddEventHandler(target, handler);
-
-    private static object EnumValue(Assembly assembly, string typeName, string name) =>
-        Enum.Parse(GetRequiredType(assembly, typeName), name);
-
-    private static Type GetRequiredType(Assembly assembly, string typeName) =>
-        assembly.GetType(typeName, throwOnError: true)
-        ?? throw new InvalidOperationException($"Type {typeName} was not found.");
 
     private static int Clamp(int? value, int defaultValue, int min, int max)
     {
