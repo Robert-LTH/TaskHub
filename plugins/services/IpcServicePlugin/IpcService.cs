@@ -42,13 +42,12 @@ public class IpcClient
     {
         using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
         await client.ConnectAsync(cancellationToken);
-        using var writer = new StreamWriter(client) { AutoFlush = true };
-        using var reader = new StreamReader(client);
+        var writer = new StreamWriter(client, leaveOpen: true) { AutoFlush = true };
+        var reader = new StreamReader(client, leaveOpen: true);
         await writer.WriteLineAsync(message);
         var response = await reader.ReadLineAsync();
         _logger.LogInformation("Sent IPC message to {Pipe}", pipeName);
         return response ?? string.Empty;
     }
 }
-
 

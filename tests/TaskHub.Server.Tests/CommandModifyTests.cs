@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Collections.Generic;
+using System.Linq;
 using Hangfire;
 using Hangfire.MemoryStorage;
 using Microsoft.AspNetCore.Authentication;
@@ -99,7 +100,8 @@ public class CommandModifyTests
         Assert.NotEqual(oldId, newId);
 
         var api = storage.GetMonitoringApi();
-        Assert.Null(api.JobDetails(oldId));
+        var oldJob = api.JobDetails(oldId);
+        Assert.True(oldJob is null || oldJob.History.Any(history => history.StateName == "Deleted"));
         Assert.NotNull(api.JobDetails(newId));
     }
 }

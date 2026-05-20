@@ -24,6 +24,11 @@ public class RegistryServicePlugin : IServicePlugin
         {
             try
             {
+                if (!OperatingSystem.IsWindows())
+                {
+                    return new OperationResult(null, "Registry key access is only supported on Windows");
+                }
+
                 var (hive, subKey) = SplitHive(keyPath);
                 using var key = hive.OpenSubKey(subKey);
                 if (key == null)
@@ -111,4 +116,3 @@ public class RegistryServicePlugin : IServicePlugin
         }
     }
 }
-
