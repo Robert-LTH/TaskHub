@@ -9,14 +9,17 @@ namespace CleanTempHandler;
 
 public class DeleteFolderCommand : ICommand
 {
-    public DeleteFolderCommand(DeleteFolderRequest request)
+    private readonly ILogger _logger;
+
+    public DeleteFolderCommand(DeleteFolderRequest request, ILogger logger)
     {
         Request = request;
+        _logger = logger;
     }
 
     public DeleteFolderRequest Request { get; }
 
-    public Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         if (Directory.Exists(Request.Path))
         {

@@ -7,14 +7,17 @@ namespace HyperVHandler;
 
 public class CreateVSwitchCommand : ICommand
 {
-    public CreateVSwitchCommand(CreateVSwitchRequest request)
+    private readonly ILogger _logger;
+
+    public CreateVSwitchCommand(CreateVSwitchRequest request, ILogger logger)
     {
         Request = request;
+        _logger = logger;
     }
 
     public CreateVSwitchRequest Request { get; }
 
-    public Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         dynamic hv = service.GetService();
         OperationResult result = hv.CreateVSwitch(Request.Name, Request.SwitchType);

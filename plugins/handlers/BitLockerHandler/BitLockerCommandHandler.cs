@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection.Metadata;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using TaskHub.Abstractions;
 
 namespace BitLockerHandler;
@@ -19,14 +21,14 @@ public class BitLockerCommandHandler : CommandHandlerBase, ICommandHandler<Rotat
     public override string ServiceName => "bitlocker";
     public override CommandExecutionContext ExecutionContext => CommandExecutionContext.System;
 
-    RotateKeyCommand ICommandHandler<RotateKeyCommand>.Create(JsonElement payload)
+    RotateKeyCommand ICommandHandler<RotateKeyCommand>.Create(JsonElement payload, ILogger logger)
     {
         var request = JsonSerializer.Deserialize<RotateKeyRequest>(payload.GetRawText()) ?? new RotateKeyRequest();
-        return new RotateKeyCommand(request);
+        return new RotateKeyCommand(request, logger);
     }
 
-    public override ICommand Create(JsonElement payload) =>
-        ((ICommandHandler<RotateKeyCommand>)this).Create(payload);
+    public override ICommand Create(JsonElement payload, ILogger logger) =>
+        ((ICommandHandler<RotateKeyCommand>)this).Create(payload, logger);
 
     public override void OnLoaded(IServiceProvider services)
     {

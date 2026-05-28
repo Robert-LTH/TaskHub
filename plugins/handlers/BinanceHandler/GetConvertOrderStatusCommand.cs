@@ -16,7 +16,7 @@ public class GetConvertOrderStatusCommand : ICommand
 
     public GetConvertOrderStatusRequest Request { get; }
 
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var client = (BinanceClient)service.GetService();
         var statusResp = await client.GetConvertOrderStatusAsync(Request.OrderId, cancellationToken);

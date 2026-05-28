@@ -7,14 +7,17 @@ namespace ProcessHandler;
 
 public class StartProcessCommand : ICommand
 {
-    public StartProcessCommand(StartProcessRequest request)
+    private readonly ILogger _logger;
+
+    public StartProcessCommand(StartProcessRequest request, ILogger logger)
     {
         Request = request;
+        _logger = logger;
     }
 
     public StartProcessRequest Request { get; }
 
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         dynamic process = service.GetService();
         OperationResult result = await process.StartAsync(
@@ -32,11 +35,11 @@ public class StartProcessCommand : ICommand
             var exitCode = payload.TryGetProperty("exitCode", out var exitCodeElement) && exitCodeElement.ValueKind != System.Text.Json.JsonValueKind.Null
                 ? exitCodeElement.GetInt32().ToString()
                 : "none";
-            logger.LogInformation("Process {FileName} completed with exit code {ExitCode}", Request.FileName, exitCode);
+            _logger.LogInformation("Process {FileName} completed with exit code {ExitCode}", Request.FileName, exitCode);
         }
         else
         {
-            logger.LogWarning("Process {FileName} did not return a payload: {Result}", Request.FileName, result.Result);
+            _logger.LogWarning("Process {FileName} did not return a payload: {Result}", Request.FileName, result.Result);
         }
 
         return result;

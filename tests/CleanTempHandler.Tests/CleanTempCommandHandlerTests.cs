@@ -1,4 +1,5 @@
 using CleanTempHandler;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Text.Json;
 using Xunit;
 
@@ -21,7 +22,7 @@ public class CleanTempCommandHandlerTests
         var handler = new CleanTempCommandHandler();
         var payload = JsonSerializer.SerializeToElement(new { path = "/tmp/taskhub" });
 
-        var command = handler.Create("delete-folder", payload);
+        var command = handler.Create("delete-folder", payload, NullLogger.Instance);
 
         Assert.IsType<DeleteFolderCommand>(command);
     }

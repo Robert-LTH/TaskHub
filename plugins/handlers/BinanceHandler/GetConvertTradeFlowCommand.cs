@@ -16,7 +16,7 @@ public class GetConvertTradeFlowCommand : ICommand
 
     public GetConvertTradeFlowRequest Request { get; }
 
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var client = (BinanceClient)service.GetService();
         var flow = await client.GetConvertTradeFlowAsync(

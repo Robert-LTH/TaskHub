@@ -33,7 +33,7 @@ public class ProcessCommandHandlerTests
             timeoutMilliseconds = 1000
         });
 
-        var command = Assert.IsType<StartProcessCommand>(((ICommandHandler<StartProcessCommand>)handler).Create(payload));
+        var command = Assert.IsType<StartProcessCommand>(((ICommandHandler<StartProcessCommand>)handler).Create(payload, NullLogger.Instance));
 
         Assert.Equal("dotnet", command.Request.FileName);
         Assert.Equal(new[] { "--version" }, command.Request.ArgumentList);
@@ -49,10 +49,10 @@ public class ProcessCommandHandlerTests
             FileName = shell.FileName,
             ArgumentList = shell.Arguments,
             TimeoutMilliseconds = 5000
-        });
+        }, NullLogger.Instance);
         var service = new ProcessServicePlugin.ProcessServicePlugin();
 
-        OperationResult result = await command.ExecuteAsync(service, NullLogger.Instance, CancellationToken.None);
+        OperationResult result = await command.ExecuteAsync(service, CancellationToken.None);
 
         Assert.Equal("success", result.Result);
         Assert.Equal("handler-out", result.Payload?.GetProperty("stdout").GetString()?.Trim());

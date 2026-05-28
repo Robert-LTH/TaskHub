@@ -9,16 +9,19 @@ namespace ConfigurationManagerHandler;
 public class InvokeMethodCommand : ICommand
 {
     private readonly bool _useAdminService;
+    private readonly ILogger _logger;
 
-    public InvokeMethodCommand(InvokeMethodRequest request, bool useAdminService)
+
+    public InvokeMethodCommand(InvokeMethodRequest request, bool useAdminService, ILogger logger)
     {
         Request = request;
         _useAdminService = useAdminService;
+        _logger = logger;
     }
 
     public InvokeMethodRequest Request { get; }
 
-    public Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         if (_useAdminService)
         {

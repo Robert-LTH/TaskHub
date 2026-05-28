@@ -9,7 +9,7 @@ namespace FakeRestHandler;
 
 public class ListBooksCommand : ICommand
 {
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var client = (FakeRestClient)service.GetService();
         var books = await client.GetBooksAsync(cancellationToken);

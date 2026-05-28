@@ -37,7 +37,7 @@ public class PopupCommandHandlerTests
             margin = 24
         });
 
-        var command = Assert.IsType<ShowPopupCommand>(((ICommandHandler<ShowPopupCommand>)handler).Create(payload));
+        var command = Assert.IsType<ShowPopupCommand>(((ICommandHandler<ShowPopupCommand>)handler).Create(payload, NullLogger.Instance));
 
         Assert.Equal("Deployment", command.Request.Title);
         Assert.Equal("Install complete", command.Request.Message);
@@ -83,9 +83,9 @@ public class PopupCommandHandlerTests
     [Fact]
     public async Task ExecuteRequiresMessage()
     {
-        var command = new ShowPopupCommand(new ShowPopupRequest());
+        var command = new ShowPopupCommand(new ShowPopupRequest(), NullLogger.Instance);
 
-        var result = await command.ExecuteAsync(new FakeServicePlugin(), NullLogger.Instance, CancellationToken.None);
+        var result = await command.ExecuteAsync(new FakeServicePlugin(), CancellationToken.None);
 
         Assert.Null(result.Payload);
         Assert.Equal("message is required", result.Result);

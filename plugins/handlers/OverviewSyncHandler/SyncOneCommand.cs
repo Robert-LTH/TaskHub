@@ -15,8 +15,9 @@ public class SyncOneCommand : ICommand
     private readonly SysManClient _sysManService;
     private readonly OverviewApiClient _overviewService;
     private readonly SqlServicePlugin.SqlServicePlugin.SqlServiceRegistry _sqlRegistry;
+    private readonly ILogger _logger;
 
-    public SyncOneCommand(IServiceProvider serviceProvider)
+    public SyncOneCommand(IServiceProvider serviceProvider, ILogger logger)
     {
         if (serviceProvider == null) throw new ArgumentNullException(nameof(serviceProvider));
 
@@ -27,15 +28,16 @@ public class SyncOneCommand : ICommand
         _sysManService = (SysManClient)sysManPlugin.GetService();
         _overviewService = (OverviewApiClient)overviewPlugin.GetService();
         _sqlRegistry = (SqlServicePlugin.SqlServicePlugin.SqlServiceRegistry)sqlPlugin.GetService();
+        _logger = logger;
     }
 
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var releasesPayload = await _overviewService.GetReleasesAsync(cancellationToken);
         var releases = JsonSerializer.SerializeToElement(releasesPayload);
         var deleteTagResult = await _sqlRegistry["overview"].DeleteAsync("DELETE * FROM sysman_tag");
         var deleteTargetTagResult = await _sqlRegistry["overview"].DeleteAsync("DELETE * FROM sysman_target_tag");
-        logger.LogInformation(releases.GetRawText());
+        _logger.LogInformation(releases.GetRawText());
 
         return new OperationResult(releases, "success");
     }

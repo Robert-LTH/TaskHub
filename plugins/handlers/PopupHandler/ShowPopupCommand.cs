@@ -13,14 +13,17 @@ namespace PopupHandler;
 
 public class ShowPopupCommand : ICommand
 {
-    public ShowPopupCommand(ShowPopupRequest request)
+    private readonly ILogger _logger;
+
+    public ShowPopupCommand(ShowPopupRequest request, ILogger logger)
     {
         Request = request;
+        _logger = logger;
     }
 
     public ShowPopupRequest Request { get; }
 
-    public Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(Request.Message))
         {
@@ -39,7 +42,7 @@ public class ShowPopupCommand : ICommand
         try
         {
             ShowPopup(Normalize(Request));
-            logger.LogInformation("Popup command completed successfully");
+            _logger.LogInformation("Popup command completed successfully");
             return Task.FromResult(new OperationResult(JsonSerializer.SerializeToElement(new
             {
                 title = string.IsNullOrWhiteSpace(Request.Title) ? "TaskHub" : Request.Title,
@@ -48,7 +51,7 @@ public class ShowPopupCommand : ICommand
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to show popup");
+            _logger.LogError(ex, "Failed to show popup");
             return Task.FromResult(new OperationResult(null, $"Failed to show popup: {ex.Message}"));
         }
     }

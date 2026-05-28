@@ -16,7 +16,7 @@ public class CreateBookCommand : ICommand
 
     public Book Book { get; }
 
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var client = (FakeRestClient)service.GetService();
         var created = await client.CreateBookAsync(Book, cancellationToken);

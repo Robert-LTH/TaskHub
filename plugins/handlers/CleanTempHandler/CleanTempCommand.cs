@@ -9,14 +9,17 @@ namespace CleanTempHandler;
 
 public class CleanTempCommand : ICommand
 {
-    public CleanTempCommand(CleanTempRequest request)
+    private readonly ILogger _logger;
+
+    public CleanTempCommand(CleanTempRequest request, ILogger logger)
     {
         Request = request;
+        _logger = logger;
     }
 
     public CleanTempRequest Request { get; }
 
-    public Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         dynamic fs = service.GetService();
         fs.Delete(Request.Path);

@@ -9,16 +9,19 @@ namespace ConfigurationManagerHandler;
 public class AddDeviceToCollectionCommand : ICommand
 {
     private readonly bool _useAdminService;
+    private readonly ILogger _logger;
 
-    public AddDeviceToCollectionCommand(AddDeviceToCollectionRequest request, bool useAdminService)
+
+    public AddDeviceToCollectionCommand(AddDeviceToCollectionRequest request, bool useAdminService, ILogger logger)
     {
         Request = request;
         _useAdminService = useAdminService;
+        _logger = logger;
     }
 
     public AddDeviceToCollectionRequest Request { get; }
 
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var ids = Request.DeviceIds ?? Array.Empty<string>();
         if (_useAdminService)

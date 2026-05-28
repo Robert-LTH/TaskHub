@@ -144,7 +144,7 @@ public class CommandEndpointsExecutionTests
         public override IReadOnlyCollection<string> Commands => new[] { "api-success" };
         public override string ServiceName => string.Empty;
         public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
-        public override ICommand Create(JsonElement payload) => new ApiSuccessCommand();
+        public override ICommand Create(JsonElement payload, ILogger logger) => new ApiSuccessCommand();
     }
 
     private sealed class ApiErrorHandler : CommandHandlerBase
@@ -152,12 +152,12 @@ public class CommandEndpointsExecutionTests
         public override IReadOnlyCollection<string> Commands => new[] { "api-error" };
         public override string ServiceName => string.Empty;
         public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
-        public override ICommand Create(JsonElement payload) => new ApiErrorCommand();
+        public override ICommand Create(JsonElement payload, ILogger logger) => new ApiErrorCommand();
     }
 
     private sealed class ApiSuccessCommand : ICommand
     {
-        public Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+        public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
         {
             var payload = JsonSerializer.SerializeToElement(new { value = "api-result" });
             return Task.FromResult(new OperationResult(payload, "success"));
@@ -166,7 +166,7 @@ public class CommandEndpointsExecutionTests
 
     private sealed class ApiErrorCommand : ICommand
     {
-        public Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken) =>
+        public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken) =>
             Task.FromResult(new OperationResult(null, "api failure"));
     }
 }

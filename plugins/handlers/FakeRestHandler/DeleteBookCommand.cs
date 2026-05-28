@@ -16,7 +16,7 @@ public class DeleteBookCommand : ICommand
 
     public GetBookRequest Request { get; }
 
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var client = (FakeRestClient)service.GetService();
         var success = await client.DeleteBookAsync(Request.Id, cancellationToken);

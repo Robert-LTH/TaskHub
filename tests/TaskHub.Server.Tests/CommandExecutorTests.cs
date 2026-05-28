@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Hangfire.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -186,12 +187,16 @@ public class CommandExecutorTests
     {
         private readonly int _delay;
         public bool WaitForPrevious { get; }
-        public DelayCommand(int delay, bool wait)
+
+        private readonly ILogger _logger;
+
+        public DelayCommand(int delay, bool wait, ILogger logger)
         {
             _delay = delay;
             WaitForPrevious = wait;
+            _logger = logger;
         }
-        public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+        public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
         {
             await Task.Delay(_delay, cancellationToken);
             return new OperationResult(JsonDocument.Parse("null").RootElement, "ok");
@@ -207,8 +212,8 @@ public class CommandExecutorTests
         {
             base.OnLoaded(services);
         }
-        public override ICommand Create(JsonElement payload) => new DelayCommand(200, false);
-        DelayCommand ICommandHandler<DelayCommand>.Create(JsonElement payload) => new DelayCommand(200, false);
+        public override ICommand Create(JsonElement payload, ILogger logger) => new DelayCommand(200, false, logger);
+        DelayCommand ICommandHandler<DelayCommand>.Create(JsonElement payload, ILogger logger) => new DelayCommand(200, false, logger);
     }
 
     private class Cmd2Handler : CommandHandlerBase, ICommandHandler<DelayCommand>
@@ -220,8 +225,8 @@ public class CommandExecutorTests
         {
             base.OnLoaded(services);
         }
-        public override ICommand Create(JsonElement payload) => new DelayCommand(200, false);
-        DelayCommand ICommandHandler<DelayCommand>.Create(JsonElement payload) => new DelayCommand(200, false);
+        public override ICommand Create(JsonElement payload, ILogger logger) => new DelayCommand(200, false, logger);
+        DelayCommand ICommandHandler<DelayCommand>.Create(JsonElement payload, ILogger logger) => new DelayCommand(200, false, logger);
     }
 
     private class CmdWaitHandler : CommandHandlerBase, ICommandHandler<DelayCommand>
@@ -233,13 +238,13 @@ public class CommandExecutorTests
         {
             base.OnLoaded(services);
         }
-        public override ICommand Create(JsonElement payload) => new DelayCommand(200, true);
-        DelayCommand ICommandHandler<DelayCommand>.Create(JsonElement payload) => new DelayCommand(200, true);
+        public override ICommand Create(JsonElement payload, ILogger logger) => new DelayCommand(200, true, logger);
+        DelayCommand ICommandHandler<DelayCommand>.Create(JsonElement payload, ILogger logger) => new DelayCommand(200, true, logger);
     }
 
     private class ProduceOutputCommand : ICommand
     {
-        public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+        public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
         {
             await Task.Delay(50, cancellationToken);
             return new OperationResult(JsonSerializer.SerializeToElement("first-output"), "success");
@@ -260,7 +265,7 @@ public class CommandExecutorTests
             }
         }
 
-        public Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+        public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
         {
             SeenPreviousOutput = _previousOutput;
             return Task.FromResult(new OperationResult(JsonSerializer.SerializeToElement("done"), "success"));
@@ -272,8 +277,8 @@ public class CommandExecutorTests
         public override IReadOnlyCollection<string> Commands => new[] { "cmdProduce" };
         public override string ServiceName => "Stub";
         public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
-        public override ICommand Create(JsonElement payload) => new ProduceOutputCommand();
-        ProduceOutputCommand ICommandHandler<ProduceOutputCommand>.Create(JsonElement payload) => new ProduceOutputCommand();
+        public override ICommand Create(JsonElement payload, ILogger logger) => new ProduceOutputCommand();
+        ProduceOutputCommand ICommandHandler<ProduceOutputCommand>.Create(JsonElement payload, ILogger logger) => new ProduceOutputCommand();
     }
 
     private class PreviousOutputHandler : CommandHandlerBase, ICommandHandler<PreviousOutputCommand>
@@ -281,8 +286,8 @@ public class CommandExecutorTests
         public override IReadOnlyCollection<string> Commands => new[] { "cmdReadPrevious" };
         public override string ServiceName => "Stub";
         public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
-        public override ICommand Create(JsonElement payload) => new PreviousOutputCommand(payload);
-        PreviousOutputCommand ICommandHandler<PreviousOutputCommand>.Create(JsonElement payload) => new PreviousOutputCommand(payload);
+        public override ICommand Create(JsonElement payload, ILogger logger) => new PreviousOutputCommand(payload);
+        PreviousOutputCommand ICommandHandler<PreviousOutputCommand>.Create(JsonElement payload, ILogger logger) => new PreviousOutputCommand(payload);
     }
 
     private class SystemOnlyHandler : CommandHandlerBase, ICommandHandler<DelayCommand>
@@ -290,8 +295,8 @@ public class CommandExecutorTests
         public override IReadOnlyCollection<string> Commands => new[] { "cmdSystem" };
         public override string ServiceName => "Stub";
         public override CommandExecutionContext ExecutionContext => CommandExecutionContext.System;
-        public override ICommand Create(JsonElement payload) => new DelayCommand(1, false);
-        DelayCommand ICommandHandler<DelayCommand>.Create(JsonElement payload) => new DelayCommand(1, false);
+        public override ICommand Create(JsonElement payload, ILogger logger) => new DelayCommand(1, false, logger);
+        DelayCommand ICommandHandler<DelayCommand>.Create(JsonElement payload, ILogger logger) => new DelayCommand(1, false, logger);
     }
 
     private class UserOnlyHandler : CommandHandlerBase, ICommandHandler<DelayCommand>
@@ -299,8 +304,8 @@ public class CommandExecutorTests
         public override IReadOnlyCollection<string> Commands => new[] { "cmdUser" };
         public override string ServiceName => "Stub";
         public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUser;
-        public override ICommand Create(JsonElement payload) => new DelayCommand(1, false);
-        DelayCommand ICommandHandler<DelayCommand>.Create(JsonElement payload) => new DelayCommand(1, false);
+        public override ICommand Create(JsonElement payload, ILogger logger) => new DelayCommand(1, false, logger);
+        DelayCommand ICommandHandler<DelayCommand>.Create(JsonElement payload, ILogger logger) => new DelayCommand(1, false, logger);
     }
 }
 

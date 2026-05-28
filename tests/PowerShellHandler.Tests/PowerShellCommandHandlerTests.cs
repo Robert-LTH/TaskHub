@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Text.Json;
 using Xunit;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace PowerShellHandler.Tests;
 
@@ -27,7 +28,7 @@ public class PowerShellCommandHandlerTests
         var request = new PowerShellScriptRequest { Script = "Write-Output 5" };
         var payload = JsonSerializer.SerializeToElement(request);
 
-        var result = await handler.ExecuteAsync(payload, plugin, CancellationToken.None);
+        var result = await handler.ExecuteAsync(payload, plugin, NullLogger.Instance, CancellationToken.None);
         Assert.Equal("success", result.Result);
         var element = result.Payload!.Value;
         var first = element.EnumerateArray().First();

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ConfigurationManagerHandler;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 using TaskHub.Abstractions;
 using Xunit;
 
@@ -56,7 +57,7 @@ public class ConfigurationManagerCommandHandlerTests
         };
         var payload = JsonSerializer.SerializeToElement(request);
         var plugin = new FakeAdminServicePlugin();
-        await handler.ExecuteAsync(payload, plugin, CancellationToken.None);
+        await handler.ExecuteAsync(payload, plugin, NullLogger.Instance, CancellationToken.None);
         Assert.True(plugin.Service.Called);
         Assert.Equal("http://localhost", plugin.Service.BaseUrl);
         Assert.Equal("test", plugin.Service.Resource);
@@ -78,7 +79,7 @@ public class ConfigurationManagerCommandHandlerTests
         };
         var payload = JsonSerializer.SerializeToElement(request);
         var plugin = new FakeWmiServicePlugin();
-        var result = await handler.ExecuteAsync(payload, plugin, CancellationToken.None);
+        var result = await handler.ExecuteAsync(payload, plugin, NullLogger.Instance, CancellationToken.None);
         Assert.True(plugin.Service.QueryCalled);
         Assert.Equal(".", plugin.Service.Host);
         Assert.Equal("root\\cimv2", plugin.Service.Namespace);
@@ -104,7 +105,7 @@ public class ConfigurationManagerCommandHandlerTests
         };
         var payload = JsonSerializer.SerializeToElement(request);
         var plugin = new FakeWmiServicePlugin();
-        var result = await handler.ExecuteAsync(payload, plugin, CancellationToken.None);
+        var result = await handler.ExecuteAsync(payload, plugin, NullLogger.Instance, CancellationToken.None);
         Assert.True(plugin.Service.InvokeCalled);
         Assert.Equal("Win32_Process", plugin.Service.Path);
         Assert.Equal("Create", plugin.Service.Method);
@@ -128,7 +129,7 @@ public class ConfigurationManagerCommandHandlerTests
         };
         var payload = JsonSerializer.SerializeToElement(request);
         var plugin = new FakeWmiServicePlugin();
-        var result = await handler.ExecuteAsync(payload, plugin, CancellationToken.None);
+        var result = await handler.ExecuteAsync(payload, plugin, NullLogger.Instance, CancellationToken.None);
         Assert.True(plugin.Service.ErrorCalled);
         Assert.Equal("DEVICE", plugin.Service.PnpDeviceId);
         Assert.Equal("success", result.Result);
@@ -153,7 +154,7 @@ public class ConfigurationManagerCommandHandlerTests
         };
         var payload = JsonSerializer.SerializeToElement(request);
         var plugin = new FakeWmiServicePlugin();
-        var result = await handler.ExecuteAsync(payload, plugin, CancellationToken.None);
+        var result = await handler.ExecuteAsync(payload, plugin, NullLogger.Instance, CancellationToken.None);
         Assert.True(plugin.Service.AddDeviceCalled);
         Assert.Equal("COLL", plugin.Service.CollectionId);
         Assert.Equal(expectedDeviceIds, plugin.Service.DeviceIds);
@@ -179,7 +180,7 @@ public class ConfigurationManagerCommandHandlerTests
         };
         var payload = JsonSerializer.SerializeToElement(request);
         var plugin = new FakeWmiServicePlugin();
-        var result = await handler.ExecuteAsync(payload, plugin, CancellationToken.None);
+        var result = await handler.ExecuteAsync(payload, plugin, NullLogger.Instance, CancellationToken.None);
         Assert.True(plugin.Service.AddUserCalled);
         Assert.Equal("UCOLL", plugin.Service.CollectionId);
         Assert.Equal(expectedUserIds, plugin.Service.UserIds);
@@ -204,7 +205,7 @@ public class ConfigurationManagerCommandHandlerTests
         };
         var payload = JsonSerializer.SerializeToElement(request);
         var plugin = new FakeAdminServicePlugin();
-        await handler.ExecuteAsync(payload, plugin, CancellationToken.None);
+        await handler.ExecuteAsync(payload, plugin, NullLogger.Instance, CancellationToken.None);
         Assert.True(plugin.Service.AddDeviceCalled);
         Assert.Equal("http://localhost", plugin.Service.BaseUrl);
         Assert.Equal("COLL", plugin.Service.CollectionId);
@@ -229,7 +230,7 @@ public class ConfigurationManagerCommandHandlerTests
         };
         var payload = JsonSerializer.SerializeToElement(request);
         var plugin = new FakeAdminServicePlugin();
-        await handler.ExecuteAsync(payload, plugin, CancellationToken.None);
+        await handler.ExecuteAsync(payload, plugin, NullLogger.Instance, CancellationToken.None);
         Assert.True(plugin.Service.AddUserCalled);
         Assert.Equal("http://localhost", plugin.Service.BaseUrl);
         Assert.Equal("UCOLL", plugin.Service.CollectionId);

@@ -24,16 +24,16 @@ public class PowerShellCommandHandler : CommandHandlerBase, ICommandHandler<Powe
     public override string ServiceName => "powershell";
     public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
 
-    PowerShellCommand ICommandHandler<PowerShellCommand>.Create(JsonElement payload)
+    PowerShellCommand ICommandHandler<PowerShellCommand>.Create(JsonElement payload, ILogger logger)
     {
         var request = JsonSerializer.Deserialize<PowerShellScriptRequest>(payload.GetRawText())
                       ?? new PowerShellScriptRequest();
         //var logger = _loggerFactory.CreateLogger(nameof(PowerShellCommand));
-        return new PowerShellCommand(request, _logger);
+        return new PowerShellCommand(request, logger);
     }
 
-    public override ICommand Create(JsonElement payload) =>
-        ((ICommandHandler<PowerShellCommand>)this).Create(payload);
+    public override ICommand Create(JsonElement payload, ILogger logger) =>
+        ((ICommandHandler<PowerShellCommand>)this).Create(payload, logger);
 
     public override void OnLoaded(IServiceProvider services)
     {

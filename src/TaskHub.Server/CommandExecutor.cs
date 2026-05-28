@@ -85,8 +85,8 @@ public class CommandExecutor
 
         var service = GetService(handler);
         var effectivePayload = ResolvePayload(command, payload);
-        var commandInstance = handler.Create(command, effectivePayload);
-        var result = await commandInstance.ExecuteAsync(service, _logger, token);
+        var commandInstance = handler.Create(command, effectivePayload, _logger);
+        var result = await commandInstance.ExecuteAsync(service, token);
         var version = _manager.GetHandlerVersion(command);
         return (result, version);
     }
@@ -297,14 +297,14 @@ public class CommandExecutor
             var service = GetService(handler);
             var payloadElement = ToJsonElement(item.Payload);
             var merged = BuildCommandPayload(item.Command, payloadElement, previous, lastResult);
-            var cmd = handler.Create(item.Command, merged);
+            var cmd = handler.Create(item.Command, merged, _logger);
             var version = _manager.GetHandlerVersion(item.Command);
 
             if (cmd.WaitForPrevious)
             {
                 await DrainAsync();
                 merged = BuildCommandPayload(item.Command, payloadElement, previous, lastResult);
-                cmd = handler.Create(item.Command, merged);
+                cmd = handler.Create(item.Command, merged, _logger);
             }
 
             running.Add(Task.Run(async () =>
@@ -316,7 +316,8 @@ public class CommandExecutor
                 var jobLogger = new JobConsoleLogger(_logger, item.Command, jobId, _logStore, _logPublishers, callbackAccessor);
                 try
                 {
-                    var result = await cmd.ExecuteAsync(service, jobLogger, token);
+                    cmd = handler.Create(item.Command, merged, jobLogger);
+                    var result = await cmd.ExecuteAsync(service, token);
                     var output = result.Payload ?? NullElement;
                     return (new ExecutedCommandResult(item.Command, ranAt, output, version, result.Result), result);
                 }

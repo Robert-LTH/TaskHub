@@ -4,7 +4,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace TaskHub.Abstractions;
 
@@ -18,8 +17,8 @@ public abstract class CommandHandlerBase : ICommandHandler, IServiceProviderAwar
     public abstract IReadOnlyCollection<string> Commands { get; }
     public abstract string ServiceName { get; }
     public abstract CommandExecutionContext ExecutionContext { get; }
-    public abstract ICommand Create(JsonElement payload);
-    public virtual ICommand Create(string command, JsonElement payload) => Create(payload);
+    public abstract ICommand Create(JsonElement payload, ILogger logger);
+    public virtual ICommand Create(string command, JsonElement payload, ILogger logger) => Create(payload, logger);
 
     public virtual void OnLoaded(IServiceProvider services)
     {
@@ -34,22 +33,11 @@ public abstract class CommandHandlerBase : ICommandHandler, IServiceProviderAwar
     public virtual async Task<OperationResult> ExecuteAsync(
         JsonElement payload,
         IServicePlugin service,
-        CancellationToken cancellationToken)
-    {
-        var command = Create(payload);
-        var result = await command.ExecuteAsync(service, NullLogger.Instance, cancellationToken);
-        return result;
-    }
-
-    public virtual async Task<OperationResult> ExecuteAsync(
-        JsonElement payload,
-        IServicePlugin service,
         ILogger logger,
         CancellationToken cancellationToken)
     {
-        // Default implementation ignores logger; override in handlers to use it.
-        var command = Create(payload);
-        var result = await command.ExecuteAsync(service, logger, cancellationToken);
+        var command = Create(payload, logger);
+        var result = await command.ExecuteAsync(service, cancellationToken);
         return result;
     }
 }

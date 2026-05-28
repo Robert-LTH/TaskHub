@@ -10,16 +10,18 @@ namespace MonitorHandler;
 public class MonitorInfoCommand : ICommand
 {
     private readonly IReportingContainer? _container;
+    private readonly ILogger _logger;
 
-    public MonitorInfoCommand(MonitorInfoRequest request, IReportingContainer? container)
+    public MonitorInfoCommand(MonitorInfoRequest request, IReportingContainer? container, ILogger logger)
     {
         Request = request;
         _container = container;
+        _logger = logger;
     }
 
     public MonitorInfoRequest Request { get; }
 
-    public Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var monitorService = (MonitorService)service.GetService();
         var monitors = MonitorService.GetMonitors();

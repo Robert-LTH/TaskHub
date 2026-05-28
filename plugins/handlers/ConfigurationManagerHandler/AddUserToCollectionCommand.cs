@@ -9,16 +9,19 @@ namespace ConfigurationManagerHandler;
 public class AddUserToCollectionCommand : ICommand
 {
     private readonly bool _useAdminService;
+    private readonly ILogger _logger;
 
-    public AddUserToCollectionCommand(AddUserToCollectionRequest request, bool useAdminService)
+
+    public AddUserToCollectionCommand(AddUserToCollectionRequest request, ILogger logger, bool useAdminService)
     {
         Request = request;
         _useAdminService = useAdminService;
+        _logger = logger;
     }
 
     public AddUserToCollectionRequest Request { get; }
 
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var ids = Request.UserIds ?? Array.Empty<string>();
         if (_useAdminService)

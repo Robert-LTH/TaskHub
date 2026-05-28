@@ -16,7 +16,7 @@ public class GetTickerPriceCommand : ICommand
 
     public GetTickerPriceRequest Request { get; }
 
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var client = (BinanceClient)service.GetService();
         var price = await client.GetTickerPriceAsync(Request.Symbol, cancellationToken);

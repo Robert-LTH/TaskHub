@@ -11,13 +11,15 @@ namespace ModuleInfoHandler;
 public class ModuleInfoCommand : ICommand
 {
     private readonly IReportingContainer? _container;
+    private readonly ILogger _logger;
 
-    public ModuleInfoCommand(IReportingContainer? container)
+    public ModuleInfoCommand(IReportingContainer? container, ILogger logger)
     {
         _container = container;
+        _logger = logger;
     }
 
-    public Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var domain = (AppDomain)service.GetService();
         var modules = domain.GetAssemblies()

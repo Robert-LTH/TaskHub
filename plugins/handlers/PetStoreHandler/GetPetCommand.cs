@@ -16,7 +16,7 @@ public class GetPetCommand : ICommand
 
     public GetPetRequest Request { get; }
 
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var client = (PetStoreClient)service.GetService();
         var pet = await client.GetPetAsync(Request.Id, cancellationToken);

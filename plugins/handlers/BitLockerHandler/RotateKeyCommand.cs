@@ -10,14 +10,17 @@ namespace BitLockerHandler;
 
 public class RotateKeyCommand : ICommand
 {
-    public RotateKeyCommand(RotateKeyRequest request)
+    private readonly ILogger _logger;
+
+    public RotateKeyCommand(RotateKeyRequest request, ILogger logger)
     {
         Request = request;
+        _logger = logger;
     }
 
     public RotateKeyRequest Request { get; }
 
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         // Ensure service is initialized
         _ = service.GetService();

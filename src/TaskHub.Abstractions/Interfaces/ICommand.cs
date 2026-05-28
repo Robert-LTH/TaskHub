@@ -17,7 +17,6 @@ public interface ICommand
 
     Task<OperationResult> ExecuteAsync(
         IServicePlugin service,
-        ILogger logger,
         CancellationToken cancellationToken);
 }
 

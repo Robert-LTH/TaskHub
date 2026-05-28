@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using TaskHub.Abstractions;
 
 namespace PetStoreHandler;
@@ -11,13 +12,13 @@ public class GetPetCommandHandler : CommandHandlerBase, ICommandHandler<GetPetCo
     public override string ServiceName => "petstore";
     public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
 
-    GetPetCommand ICommandHandler<GetPetCommand>.Create(JsonElement payload)
+    GetPetCommand ICommandHandler<GetPetCommand>.Create(JsonElement payload, ILogger logger)
     {
         var request = JsonSerializer.Deserialize<GetPetRequest>(payload.GetRawText()) ?? new GetPetRequest();
         return new GetPetCommand(request);
     }
 
-    public override ICommand Create(JsonElement payload) => ((ICommandHandler<GetPetCommand>)this).Create(payload);
+    public override ICommand Create(JsonElement payload, ILogger logger) => ((ICommandHandler<GetPetCommand>)this).Create(payload, logger);
 
     public override void OnLoaded(IServiceProvider services)
     {

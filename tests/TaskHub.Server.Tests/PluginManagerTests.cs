@@ -12,6 +12,8 @@ using TaskHub.Abstractions;
 using TaskHub.Server;
 using Xunit;
 using Microsoft.Extensions.Logging;
+using Hangfire.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace TaskHub.Server.Tests;
 
@@ -177,16 +179,18 @@ public class PluginManagerTests
 
     private class StubCommand : ICommand
     {
-        public StubCommand(StubRequest request)
+        private readonly ILogger _logger;
+
+        public StubCommand(StubRequest request, ILogger logger)
         {
             Request = request;
+            _logger = logger;
         }
 
         public StubRequest Request { get; }
 
         public System.Threading.Tasks.Task<OperationResult> ExecuteAsync(
             IServicePlugin service,
-            ILogger logger,
             System.Threading.CancellationToken cancellationToken)
         {
             var element = JsonDocument.Parse("{}" ).RootElement;
@@ -199,12 +203,12 @@ public class PluginManagerTests
         public override IReadOnlyCollection<string> Commands => new[] { "stub" };
         public override string ServiceName => "Stub";
         public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
-        private static StubCommand CreateCommand(JsonElement payload) =>
-            new StubCommand(JsonSerializer.Deserialize<StubRequest>(payload.GetRawText()) ?? new StubRequest());
+        private static StubCommand CreateCommand(JsonElement payload, ILogger logger) =>
+            new StubCommand(JsonSerializer.Deserialize<StubRequest>(payload.GetRawText()) ?? new StubRequest(), logger);
 
-        public override ICommand Create(JsonElement payload) => CreateCommand(payload);
+        public override ICommand Create(JsonElement payload, ILogger logger) => CreateCommand(payload, logger);
 
-        StubCommand ICommandHandler<StubCommand>.Create(JsonElement payload) => CreateCommand(payload);
+        StubCommand ICommandHandler<StubCommand>.Create(JsonElement payload, ILogger logger) => CreateCommand(payload, logger);
         public override void OnLoaded(IServiceProvider services)
         {
             base.OnLoaded(services);

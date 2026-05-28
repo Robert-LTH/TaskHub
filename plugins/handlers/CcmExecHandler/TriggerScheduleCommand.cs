@@ -9,14 +9,17 @@ namespace CcmExecHandler;
 
 public class TriggerScheduleCommand : ICommand
 {
-    public TriggerScheduleCommand(TriggerScheduleRequest request)
+    public TriggerScheduleCommand(TriggerScheduleRequest request, ILogger logger)
     {
         Request = request;
+        _logger = logger;
     }
 
     public TriggerScheduleRequest Request { get; }
 
-    public Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    private readonly ILogger _logger;
+
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         if (!CcmSchedules.TryGetScheduleId(Request.Task, out var scheduleId))
         {

@@ -17,7 +17,7 @@ public class CallEndpointCommand : ICommand
 
     public CallEndpointRequest Request { get; }
 
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var client = (BinanceClient)service.GetService();
         var method = new HttpMethod(Request.Method.ToUpperInvariant());

@@ -16,7 +16,7 @@ public class AcceptConvertQuoteCommand : ICommand
 
     public AcceptConvertQuoteRequest Request { get; }
 
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var client = (BinanceClient)service.GetService();
         var result = await client.AcceptConvertQuoteAsync(Request.QuoteId, cancellationToken);

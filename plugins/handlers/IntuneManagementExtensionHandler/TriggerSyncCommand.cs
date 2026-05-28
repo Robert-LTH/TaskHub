@@ -9,14 +9,17 @@ namespace IntuneManagementExtensionHandler;
 
 public class TriggerSyncCommand : ICommand
 {
-    public TriggerSyncCommand(SyncRequest request)
+    public TriggerSyncCommand(SyncRequest request, ILogger logger)
     {
         Request = request;
+        _logger = logger;
     }
 
     public SyncRequest Request { get; }
 
-    public Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    private readonly ILogger _logger;
+
+    public Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         const string script = @"
 $svc = Get-Service -Name 'IntuneManagementExtension' -ErrorAction SilentlyContinue

@@ -9,7 +9,7 @@ namespace BinanceHandler;
 
 public class GetServerTimeCommand : ICommand
 {
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var client = (BinanceClient)service.GetService();
         var serverTime = await client.GetServerTimeAsync(cancellationToken);

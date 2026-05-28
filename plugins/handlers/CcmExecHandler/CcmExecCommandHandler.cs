@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.IO;
 using TaskHub.Abstractions;
+using Microsoft.Extensions.Logging;
 
 namespace CcmExecHandler;
 
@@ -12,15 +13,15 @@ public class CcmExecCommandHandler : CommandHandlerBase, ICommandHandler<Trigger
     public override string ServiceName => "configurationmanager";
     public override CommandExecutionContext ExecutionContext => CommandExecutionContext.System;
 
-    TriggerScheduleCommand ICommandHandler<TriggerScheduleCommand>.Create(JsonElement payload)
+    TriggerScheduleCommand ICommandHandler<TriggerScheduleCommand>.Create(JsonElement payload, ILogger logger)
     {
         var request = JsonSerializer.Deserialize<TriggerScheduleRequest>(payload.GetRawText())
                       ?? new TriggerScheduleRequest();
-        return new TriggerScheduleCommand(request);
+        return new TriggerScheduleCommand(request, logger);
     }
 
-    public override ICommand Create(JsonElement payload) =>
-        ((ICommandHandler<TriggerScheduleCommand>)this).Create(payload);
+    public override ICommand Create(JsonElement payload, ILogger logger) =>
+        ((ICommandHandler<TriggerScheduleCommand>)this).Create(payload, logger);
 
     public override void OnLoaded(IServiceProvider services)
     {

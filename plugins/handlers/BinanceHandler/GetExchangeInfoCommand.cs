@@ -9,7 +9,7 @@ namespace BinanceHandler;
 
 public class GetExchangeInfoCommand : ICommand
 {
-    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, ILogger logger, CancellationToken cancellationToken)
+    public async Task<OperationResult> ExecuteAsync(IServicePlugin service, CancellationToken cancellationToken)
     {
         var client = (BinanceClient)service.GetService();
         var info = await client.GetExchangeInfoAsync(cancellationToken);

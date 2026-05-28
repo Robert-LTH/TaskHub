@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using TaskHub.Abstractions;
 
 namespace ProcessHandler;
@@ -12,12 +13,12 @@ public class StartProcessCommandHandler : CommandHandlerBase, ICommandHandler<St
 
     public override CommandExecutionContext ExecutionContext => CommandExecutionContext.RegularUserOrSystem;
 
-    StartProcessCommand ICommandHandler<StartProcessCommand>.Create(JsonElement payload)
+    StartProcessCommand ICommandHandler<StartProcessCommand>.Create(JsonElement payload, ILogger logger)
     {
         var request = JsonSerializer.Deserialize<StartProcessRequest>(payload.GetRawText()) ?? new StartProcessRequest();
-        return new StartProcessCommand(request);
+        return new StartProcessCommand(request, logger);
     }
 
-    public override ICommand Create(JsonElement payload) =>
-        ((ICommandHandler<StartProcessCommand>)this).Create(payload);
+    public override ICommand Create(JsonElement payload, ILogger logger) =>
+        ((ICommandHandler<StartProcessCommand>)this).Create(payload, logger);
 }
